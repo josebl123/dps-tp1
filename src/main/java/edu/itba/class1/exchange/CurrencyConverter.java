@@ -1,18 +1,19 @@
 package edu.itba.class1.exchange;
 
-import edu.itba.class1.clients.IApiClient;
-import edu.itba.class1.models.Money;
-import lombok.AllArgsConstructor;
+
+
+import lombok.RequiredArgsConstructor;
 
 import java.util.Currency;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class CurrencyConverter {
 
-	private final IApiClient client;
+	private final CurrencyRateProvider currencyRateProvider;
 
-	public Money convert(Money from, Currency toCurrency) {
-		return from.multiply(client.getExchangeRate(from, toCurrency)).changeCurrency(toCurrency);
+	public MoneyAmount convert(MoneyAmount moneyAmount, Currency to) {
+		final var rate = this.currencyRateProvider.getCurrencyRate(moneyAmount.currency(), to).rate();
+		return new MoneyAmount(to, moneyAmount.multiply(rate));
 	}
 
 }

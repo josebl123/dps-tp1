@@ -1,39 +1,31 @@
 package edu.itba.class1.exchange;
 
-import org.junit.jupiter.api.BeforeEach;
+
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import edu.itba.class1.clients.IApiClient;
-import edu.itba.class1.clients.MockApiClient;
-import edu.itba.class1.models.Money;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.within;
-
-import java.math.BigDecimal;
 import java.util.Currency;
-import java.util.Locale;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class CurrencyConverterTest {
 
-	private CurrencyConverter currencyConverter;
-
-	@BeforeEach
-	void setup() {
-		IApiClient client = new MockApiClient();
-		this.currencyConverter = new CurrencyConverter(client);
-	}
+	public static final Currency USD = Currency.getInstance("USD");
+	public static final Currency ARS = Currency.getInstance("ARS");
 
 	@Test
 	void testConvert() {
 		// Given
-		final var money = new Money(Currency.getInstance(Locale.US), new BigDecimal(200));
-		final var toCurrency = Currency.getInstance(Locale.CANADA);
+		final var provider = mock(CurrencyRateProvider.class);
+		when(provider.getCurrencyRate(ARS, USD)).thenReturn(new CurrencyRate(1.5));
+		final var converter = new CurrencyConverter(provider);
 
 		// When
-		final var result = currencyConverter.convert(money, toCurrency);
+		final var result = converter.convert(new MoneyAmount(ARS, 100), USD);
 
 		// Then
-		assertThat(result.amount()).isCloseTo(new BigDecimal(400), within(new BigDecimal(0.01)));
+		Assertions.assertEquals(new MoneyAmount(USD, 150), result);
 	}
 }
