@@ -2,7 +2,6 @@ package edu.itba.class1.exchange;
 
 
 
-import edu.itba.class1.exchange.Providers.CurrencyRateProvider;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Currency;

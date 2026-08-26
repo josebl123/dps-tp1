@@ -3,12 +3,10 @@ package edu.itba.class1.exchange.Providers;
 import edu.itba.class1.exchange.CurrencyRate;
 
 import java.math.BigDecimal;
-import java.util.Currency;
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDate;
+import java.util.*;
 
 public interface HistoricalExchangeRateProvider {
-    CurrencyRate getCurrencyRate(Currency from, List<Currency> toCurrencies, BigDecimal amount, Date date);
-
+    Map<Currency, CurrencyRate> getHistoricalRates(Currency base, Set<Currency> targets, LocalDate date);
 }
 
