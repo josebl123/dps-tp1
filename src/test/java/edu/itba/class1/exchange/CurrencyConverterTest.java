@@ -2,6 +2,7 @@ package edu.itba.class1.exchange;
 
 
 
+import edu.itba.class1.exchange.Providers.CurrencyRateProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

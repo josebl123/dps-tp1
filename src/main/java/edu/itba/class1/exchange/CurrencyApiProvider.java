@@ -4,6 +4,8 @@ package edu.itba.class1.exchange;
 
 import com.google.gson.Gson;
 
+import edu.itba.class1.exchange.Exceptions.CurrencyApiUnavailableException;
+import edu.itba.class1.exchange.Providers.CurrencyRateProvider;
 import edu.itba.class1.exchange.http.HttpClient;
 import edu.itba.class1.exchange.http.HttpResponse;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +27,7 @@ public class CurrencyApiProvider implements CurrencyRateProvider {
 			final var rate = this.getExchangeRateResponse(response);
 			return new CurrencyRate(rate.getExchange(to.getCurrencyCode()));
 		} else {
-			throw new CurrencyRateNotAvailable();
+			throw new CurrencyApiUnavailableException.CurrencyRateNotAvailable();
 		}
 	}
 
