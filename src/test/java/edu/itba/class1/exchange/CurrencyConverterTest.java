@@ -18,7 +18,7 @@ class CurrencyConverterTest {
 	@Test
 	void testConvert() {
 		// Given
-		final var provider = mock(CurrencyRateProvider.class);
+		final var provider = mock(CurrencyApi.class);
 		when(provider.getCurrencyRate(ARS, USD)).thenReturn(new CurrencyRate(1.5));
 		final var converter = new CurrencyConverter(provider);
 
