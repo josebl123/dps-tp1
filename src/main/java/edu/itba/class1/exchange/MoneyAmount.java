@@ -29,7 +29,7 @@ public record MoneyAmount(Currency currency, BigDecimal amount) {
 	}
 
 	public BigDecimal multiply(double rate) {
-		return this.amount.multiply(BigDecimal.valueOf(rate));
+		return this.multiply(BigDecimal.valueOf(rate));
 	}
 
 	public BigDecimal multiply(BigDecimal rate) {
