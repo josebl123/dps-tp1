@@ -5,6 +5,7 @@ import edu.itba.class1.exchange.http.HttpResponse;
 import lombok.RequiredArgsConstructor;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Currency;
 import java.util.Map;
@@ -24,7 +25,9 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
 
     @Override
     public HttpResponse getMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies) {
-        return null;
+        return this.httpClient.get(URI.create("https://api.currencyapi.com/v3/latest"),
+                Map.of("base_currency", fromCurrency, "currencies", String.join(",", toCurrencies.stream().map(Currency::getCurrencyCode).toList())),
+                Map.of("accept", "application/json", "apikey", API_KEY));
     }
 
     @Override
