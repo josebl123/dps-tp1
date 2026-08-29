@@ -6,26 +6,32 @@ import com.google.gson.Gson;
 
 import edu.itba.class1.exchange.http.HttpClient;
 import edu.itba.class1.exchange.http.HttpResponse;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import java.net.URI;
 import java.util.Collection;
 import java.util.Currency;
+import java.util.List;
 import java.util.Map;
 
 
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class CurrencyApiProvider implements CurrencyRateProvider, CurrencyCatalog {
-
-	private final HttpClient httpClient;
-	private static final String API_KEY = "cur_live_33r7xmpvu4kiAmeK4XZrotAn84qT4SMnPlP9Use1";
+	private final CurrencyApiClient currencyApiClient;
 
 	@Override
 	public CurrencyRate getCurrencyRate(Currency from, Currency to) {
-		final var response = this.getConversionRate(from.getCurrencyCode(), to.getCurrencyCode());
+		return this.getMultipleCurrencyRates(from, List.of(to)).stream().findFirst().orElseThrow();
+	}
+
+	@Override
+	public Collection<CurrencyRate> getMultipleCurrencyRates(Currency from, Collection<Currency> to) {
+		final var response = this.currencyApiClient.getMultipleCurrencyRates(from, to);
 		validateResponse(response);
-		final var rate = this.getResponse(response, ExchangeRateResponse.class);
-		return new CurrencyRate(rate.getExchange(to.getCurrencyCode()));
+		final var exchangeRateResponse = this.getResponse(response, ExchangeRateResponse.class);
+		return to.stream().map(currency -> new CurrencyRate(exchangeRateResponse.getExchange(currency.getCurrencyCode())))
+				.toList();
 	}
 
 	private void validateResponse(HttpResponse response) {
@@ -47,16 +53,12 @@ public class CurrencyApiProvider implements CurrencyRateProvider, CurrencyCatalo
     	return new Gson().fromJson(response.body(), responseType);
 	}
 
-	private HttpResponse getConversionRate(String fromCurrency, String toCurrency) {
-		return this.httpClient.get(URI.create("https://api.currencyapi.com/v3/latest"),
-				Map.of("base_currency", fromCurrency, "currencies", toCurrency),
-				Map.of("accept", "application/json", "apikey", API_KEY));
+	private HttpResponse getConversionRate(Currency fromCurrency, Currency toCurrency) {
+		return this.currencyApiClient.getCurrencyRate(fromCurrency, toCurrency);
 	}
 
 	private HttpResponse getAllCurrencies() {
-		return this.httpClient.get(URI.create("https://api.currencyapi.com/v3/currencies"),
-				Map.of(),
-				Map.of("accept", "application/json", "apikey", API_KEY));
+		return this.currencyApiClient.getAvailableCurrencies();
 	}
 
 }

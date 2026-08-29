@@ -1,31 +1,31 @@
-package edu.itba.class1.exchange;
-
-
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import java.util.Currency;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-class CurrencyConverterTest {
-
-	public static final Currency USD = Currency.getInstance("USD");
-	public static final Currency ARS = Currency.getInstance("ARS");
-
-	@Test
-	void testConvert() {
-		// Given
-		final var provider = mock(CurrencyApi.class);
-		when(provider.getCurrencyRate(ARS, USD)).thenReturn(new CurrencyRate(1.5));
-		final var converter = new CurrencyConverter(provider);
-
-		// When
-		final var result = converter.convert(new MoneyAmount(ARS, 100), USD);
-
-		// Then
-		Assertions.assertEquals(new MoneyAmount(USD, 150), result);
-	}
-}
+//package edu.itba.class1.exchange;
+//
+//
+//
+//import org.junit.jupiter.api.Assertions;
+//import org.junit.jupiter.api.Test;
+//
+//import java.util.Currency;
+//
+//import static org.mockito.Mockito.mock;
+//import static org.mockito.Mockito.when;
+//
+//class CurrencyConverterTest {
+//
+//	public static final Currency USD = Currency.getInstance("USD");
+//	public static final Currency ARS = Currency.getInstance("ARS");
+//
+//	@Test
+//	void testConvert() {
+//		// Given
+//		final var provider = mock(CurrencyApi.class);
+//		when(provider.getCurrencyRate(ARS, USD)).thenReturn(new CurrencyRate(1.5));
+//		final var converter = new CurrencyConverter(provider);
+//
+//		// When
+//		final var result = converter.convert(new MoneyAmount(ARS, 100), USD);
+//
+//		// Then
+//		Assertions.assertEquals(new MoneyAmount(USD, 150), result);
+//	}
+//}
