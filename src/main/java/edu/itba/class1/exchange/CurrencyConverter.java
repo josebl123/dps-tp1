@@ -4,6 +4,7 @@ package edu.itba.class1.exchange;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collection;
 import java.util.Currency;
 
 @RequiredArgsConstructor
@@ -14,6 +15,12 @@ public class CurrencyConverter {
 	public Conversion convert(MoneyAmount moneyAmount, Currency to) {
 		final var rate = this.currencyRateProvider.getCurrencyRate(moneyAmount.currency(), to);
 		return new Conversion(new MoneyAmount(to, moneyAmount.multiply(rate.rate())), rate);
+	}
+	public Collection<Conversion> convertMultiple(MoneyAmount moneyAmount, Collection<Currency> to) {
+		final var rates = this.currencyRateProvider.getMultipleCurrencyRates(moneyAmount.currency(), to);
+		return rates.stream()
+				.map(rate -> new Conversion(new MoneyAmount(rate.toCurrency(), moneyAmount.multiply(rate.rate())), rate))
+				.toList();
 	}
 
 }

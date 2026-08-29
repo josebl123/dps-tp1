@@ -2,10 +2,14 @@ package edu.itba.class1.exchange;
 
 
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Currency;
 
 public interface CurrencyRateProvider {
-	CurrencyRate getCurrencyRate(Currency from, Currency to);
+	CurrencyRate getCurrencyRate(Currency from, Currency to); //TODO: preguntar al ayudante si borrar esto
 	Collection<CurrencyRate> getMultipleCurrencyRates(Currency from, Collection<Currency> to);
+
+	//TODO: agregamos la version simple?
+	Collection<CurrencyRate> getHistoricalMultipleCurrencyRates(Currency from, Collection<Currency> to, LocalDate date);
 }

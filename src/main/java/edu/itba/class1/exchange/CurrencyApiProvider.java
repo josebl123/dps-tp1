@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Currency;
 import java.util.List;
@@ -26,12 +27,29 @@ public class CurrencyApiProvider implements CurrencyRateProvider, CurrencyCatalo
 	}
 
 	@Override
-	public Collection<CurrencyRate> getMultipleCurrencyRates(Currency from, Collection<Currency> to) {
-		final var response = this.currencyApiClient.getMultipleCurrencyRates(from, to);
+	public Collection<CurrencyRate> getMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies) {
+		final var response = this.currencyApiClient.getMultipleCurrencyRates(fromCurrency, toCurrencies);
 		validateResponse(response);
 		final var exchangeRateResponse = this.getResponse(response, ExchangeRateResponse.class);
-		return to.stream().map(currency -> new CurrencyRate(exchangeRateResponse.getExchange(currency.getCurrencyCode())))
+		return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency, exchangeRateResponse.getExchange(toCurrency.getCurrencyCode())))
 				.toList();
+	}
+
+	@Override
+	public Collection<CurrencyRate> getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
+		final var response = this.currencyApiClient.getHistoricalMultipleCurrencyRates(fromCurrency, toCurrencies, date);
+		validateResponse(response);
+		final var exchangeRateResponse = this.getResponse(response, ExchangeRateResponse.class);
+		return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency,  exchangeRateResponse.getExchange(toCurrency.getCurrencyCode())))
+				.toList();
+
+	}
+
+	@Override
+	public Collection<Currency> getAvailableCurrencies() {
+		final var response = this.getAllCurrencies();
+		validateResponse(response);
+		return this.getResponse(response, AvailableCurrenciesResponse.class).getCurrencies();
 	}
 
 	private void validateResponse(HttpResponse response) {
@@ -40,13 +58,6 @@ public class CurrencyApiProvider implements CurrencyRateProvider, CurrencyCatalo
 		// status codes (though not quite the same as a factory)
 
 		//this will resolve a future requirement as well (point 4)
-	}
-
-	@Override
-	public Collection<Currency> getAvailableCurrencies() {
-		final var response = this.getAllCurrencies();
-		validateResponse(response);
-		return this.getResponse(response, AvailableCurrenciesResponse.class).getCurrencies();
 	}
 
 	private <T> T getResponse(HttpResponse response, Class<T> responseType) {

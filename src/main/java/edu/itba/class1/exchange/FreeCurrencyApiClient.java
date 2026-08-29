@@ -36,4 +36,11 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
                 Map.of(),
                 Map.of("accept", "application/json", "apikey", API_KEY));
     }
+
+    @Override
+    public HttpResponse getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
+        return this.httpClient.get(URI.create("https://api.currencyapi.com/v3/historical"),
+                Map.of("base_currency", fromCurrency, "currencies", String.join(",", toCurrencies.stream().map(Currency::getCurrencyCode).toList()), "date", date.toString()),
+                Map.of("accept", "application/json", "apikey", API_KEY));
+    }
 }
