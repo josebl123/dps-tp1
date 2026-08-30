@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Currency;
-import java.util.Objects;
 
 public record CurrencyRate(Currency fromCurrency, Currency toCurrency, BigDecimal rate, Instant timestamp) {
 
