@@ -5,11 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import edu.itba.class1.exchange.ExchangeRateResponse;
 import org.junit.jupiter.api.Test;
-import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 class GsonJsonParserTest {
-    private final JsonParser parser = new GsonJsonParser(new Gson());
+    private final JsonParser parser = new GsonJsonParser();
 
     @Test
     void parsesJsonIntoTheRequestedType() {
