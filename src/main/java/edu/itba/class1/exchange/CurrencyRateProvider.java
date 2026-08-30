@@ -7,9 +7,8 @@ import java.util.Collection;
 import java.util.Currency;
 
 public interface CurrencyRateProvider {
-	CurrencyRate getCurrencyRate(Currency from, Currency to); //TODO: preguntar al ayudante si borrar esto
+	CurrencyRate getCurrencyRate(Currency from, Currency to);
 	Collection<CurrencyRate> getMultipleCurrencyRates(Currency from, Collection<Currency> to);
-
-	//TODO: agregamos la version simple?
+	CurrencyRate getHistoricalCurrencyRate(Currency from, Currency to, LocalDate date);
 	Collection<CurrencyRate> getHistoricalMultipleCurrencyRates(Currency from, Collection<Currency> to, LocalDate date);
 }

@@ -1,5 +1,6 @@
 package edu.itba.class1.exchange;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import lombok.Setter;
@@ -8,7 +9,7 @@ import lombok.Setter;
 public class ExchangeRateResponse {
     private Map<String, CurrencyData> data;
 
-	public double getExchange(final String toCurrency) {
+	public BigDecimal getExchange(final String toCurrency) {
 		final var currencyData = this.data.get(toCurrency);
 		if (currencyData == null) {
 			throw new IllegalStateException("Missing exchange rate for currency: " + toCurrency);
@@ -16,5 +17,5 @@ public class ExchangeRateResponse {
 		return currencyData.value;
 	}
 
-	private record CurrencyData(String code, double value) {}
+	private record CurrencyData(String code, BigDecimal value) {}
 }

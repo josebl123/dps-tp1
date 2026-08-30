@@ -1,8 +1,6 @@
 import edu.itba.class1.exchange.*;
 import edu.itba.class1.exchange.parser.GsonJsonParser;
 
-import com.google.gson.Gson;
-
 void main() {
 	final var httpClient = new UnirestHttpClient();
 	final var parser = new GsonJsonParser();

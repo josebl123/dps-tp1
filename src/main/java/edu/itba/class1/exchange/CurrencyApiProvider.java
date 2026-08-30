@@ -25,9 +25,14 @@ public class CurrencyApiProvider implements CurrencyRateProvider, CurrencyCatalo
 	}
 
 	@Override
+	public CurrencyRate getHistoricalCurrencyRate(Currency from, Currency to, LocalDate date) {
+		return this.getHistoricalMultipleCurrencyRates(from, List.of(to), date).stream().findFirst().orElseThrow();
+	}
+
+	@Override
 	public Collection<CurrencyRate> getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
 		final var exchangeRateResponse = this.currencyApiClient.getHistoricalMultipleCurrencyRates(fromCurrency, toCurrencies, date);
-		return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency,  exchangeRateResponse.getExchange(toCurrency.getCurrencyCode())))
+		return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency, exchangeRateResponse.getExchange(toCurrency.getCurrencyCode()), date))
 				.toList();
 
 	}

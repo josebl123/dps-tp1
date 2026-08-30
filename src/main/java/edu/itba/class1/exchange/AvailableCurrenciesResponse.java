@@ -13,10 +13,7 @@ public class AvailableCurrenciesResponse {
 
 	public Collection<Currency> getCurrencies() {
 		final var availableCurrencies = this.data.keySet();
-		if (availableCurrencies == null) {
-			throw new IllegalStateException("No available currencies");
-		}
-		return availableCurrencies.stream().map(Currency::getInstance).toList(); //should check for error? (Currency::getInstance)
+        return availableCurrencies.stream().map(Currency::getInstance).toList();
 	}
 
 	private record CurrencyData(String code, Object currencyInfo) {}

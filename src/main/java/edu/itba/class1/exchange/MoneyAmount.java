@@ -14,11 +14,7 @@ public record MoneyAmount(Currency currency, BigDecimal amount) {
 		if (amount == null) {
 			throw new IllegalArgumentException("Amount cannot be null");
 		}
-		amount = amount.setScale(2, RoundingMode.HALF_EVEN);
-	}
-
-	public MoneyAmount(Currency currency, double amount) {
-		this(currency, BigDecimal.valueOf(amount));
+		amount = amount.setScale(currency.getDefaultFractionDigits(), RoundingMode.HALF_EVEN);
 	}
 
 	public MoneyAmount add(MoneyAmount other) {
@@ -28,9 +24,6 @@ public record MoneyAmount(Currency currency, BigDecimal amount) {
 		return new MoneyAmount(this.currency, this.amount.add(other.amount));
 	}
 
-	public BigDecimal multiply(double rate) {
-		return this.multiply(BigDecimal.valueOf(rate));
-	}
 
 	public BigDecimal multiply(BigDecimal rate) {
 		return this.amount.multiply(rate);
