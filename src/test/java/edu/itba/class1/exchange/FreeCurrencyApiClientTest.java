@@ -1,6 +1,8 @@
 package edu.itba.class1.exchange;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -67,6 +69,26 @@ class FreeCurrencyApiClientTest {
 
         assertThat(capturedUrl()).isEqualTo(URI.create("https://api.currencyapi.com/v3/currencies"));
         assertThat(capturedQuery()).isEmpty();
+    }
+
+    @Test
+    void failsWhenTheApiRespondsWithAnError() {
+        when(httpClient.get(any(), any(), any()))
+                .thenReturn(new HttpResponse("{\"message\":\"Not Found\"}", 404));
+
+        assertThatThrownBy(() -> client.getCurrencyRate(USD, EUR))
+                .isInstanceOf(CurrencyApiException.class)
+                .hasMessageContaining("404")
+                .hasMessageContaining("Not Found");
+    }
+
+    @Test
+    void exposesTheStatusCodeOfTheFailedRequest() {
+        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{}", 500));
+
+        var thrown = assertThrows(CurrencyApiException.class, client::getAvailableCurrencies);
+
+        assertThat(thrown.statusCode()).isEqualTo(500);
     }
 
     private URI capturedUrl() {

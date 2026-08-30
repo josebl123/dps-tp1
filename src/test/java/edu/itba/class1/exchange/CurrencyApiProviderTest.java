@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import edu.itba.class1.exchange.parser.GsonJsonParser;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
@@ -31,7 +33,8 @@ class CurrencyApiProviderTest {
 
         assertThat(rates).extracting(CurrencyRate::fromCurrency).containsExactly(USD, USD);
         assertThat(rates).extracting(CurrencyRate::toCurrency).containsExactly(EUR, JPY);
-        assertThat(rates).extracting(CurrencyRate::rate).containsExactly(0.92, 145.5);
+        assertThat(rates).extracting(CurrencyRate::rate)
+                .containsExactly(new BigDecimal("0.92"), new BigDecimal("145.5"));
     }
 
     @Test
@@ -42,7 +45,7 @@ class CurrencyApiProviderTest {
         var rate = provider.getCurrencyRate(USD, EUR);
 
         assertThat(rate.toCurrency()).isEqualTo(EUR);
-        assertThat(rate.rate()).isEqualTo(0.92);
+        assertThat(rate.rate()).isEqualByComparingTo("0.92");
         verify(client).getMultipleCurrencyRates(USD, List.of(EUR));
     }
 
@@ -74,8 +77,23 @@ class CurrencyApiProviderTest {
         assertThat(rates).singleElement().satisfies(rate -> {
             assertThat(rate.fromCurrency()).isEqualTo(USD);
             assertThat(rate.toCurrency()).isEqualTo(EUR);
-            assertThat(rate.rate()).isEqualTo(0.91);
+            assertThat(rate.rate()).isEqualByComparingTo("0.91");
+            assertThat(rate.timestamp()).isEqualTo(Instant.parse("2024-11-20T00:00:00Z"));
         });
+    }
+
+    @Test
+    void getsOneHistoricalRateUsingTheMultipleRatesContract() {
+        var date = LocalDate.of(2024, 11, 20);
+        when(client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date))
+                .thenReturn(rates("{\"data\":{\"EUR\":{\"code\":\"EUR\",\"value\":0.91}}}"));
+
+        var rate = provider.getHistoricalCurrencyRate(USD, EUR, date);
+
+        assertThat(rate.toCurrency()).isEqualTo(EUR);
+        assertThat(rate.rate()).isEqualByComparingTo("0.91");
+        assertThat(rate.timestamp()).isEqualTo(Instant.parse("2024-11-20T00:00:00Z"));
+        verify(client).getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date);
     }
 
     @Test

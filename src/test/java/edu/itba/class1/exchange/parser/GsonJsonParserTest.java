@@ -14,7 +14,7 @@ class GsonJsonParserTest {
     void parsesJsonIntoTheRequestedType() {
         var response = parser.parse("{\"data\":{\"EUR\":{\"code\":\"EUR\",\"value\":0.92}}}", ExchangeRateResponse.class);
 
-        assertThat(response.getExchange("EUR")).isEqualTo(0.92);
+        assertThat(response.getExchange("EUR")).isEqualByComparingTo("0.92");
     }
 
     @Test
