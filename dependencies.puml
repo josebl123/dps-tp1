@@ -1,0 +1,116 @@
+@startuml
+title Currency Converter - Dependencias e inversion de dependencias
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+legend right
+  ..|>  Implementa / realiza una interfaz
+  -->   Dependencia directa
+  ..>   Uso o dependencia
+endlegend
+
+package "Dominio / Aplicacion" {
+    class CurrencyConverter {
+        -currencyRateProvider: CurrencyRateProvider
+        +convert(moneyAmount: MoneyAmount, to: Currency): Conversion
+    }
+
+    interface CurrencyRateProvider {
+        +getCurrencyRate(from: Currency, to: Currency): CurrencyRate
+        +getMultipleCurrencyRates(from: Currency, to: Collection): Collection
+        +getHistoricalMultipleCurrencyRates(...): Collection
+    }
+
+    interface CurrencyCatalog {
+        +getAvailableCurrencies(): Collection
+    }
+
+    class Conversion {
+        converted: MoneyAmount
+        rateUsed: CurrencyRate
+    }
+
+    class CurrencyRate {
+        rate: double
+        timestamp: Instant
+    }
+
+    class MoneyAmount
+}
+
+package "Adaptadores de aplicacion / API" {
+    class CurrencyApiProvider {
+        -currencyApiClient: CurrencyApiClient
+        +getCurrencyRate(...)
+        +getMultipleCurrencyRates(...)
+        +getHistoricalMultipleCurrencyRates(...)
+        +getAvailableCurrencies()
+    }
+
+    interface CurrencyApiClient {
+        +getCurrencyRate(...): HttpResponse
+        +getMultipleCurrencyRates(...): HttpResponse
+        +getAvailableCurrencies(): HttpResponse
+        +getHistoricalMultipleCurrencyRates(...): HttpResponse
+    }
+}
+
+package "Infraestructura" {
+    class FreeCurrencyApiClient {
+        -httpClient: HttpClient
+        +getCurrencyRate(...): HttpResponse
+        +getMultipleCurrencyRates(...): HttpResponse
+        +getAvailableCurrencies(): HttpResponse
+        +getHistoricalMultipleCurrencyRates(...): HttpResponse
+    }
+
+    interface HttpClient {
+        +get(url: URI, queryParams: Map, headers: Map): HttpResponse
+    }
+
+    class UnirestHttpClient
+    class HttpResponse
+    class Gson
+    class Unirest <<external library>>
+}
+
+package "Bootstrap" {
+    class Main
+}
+
+CurrencyConverter --> CurrencyRateProvider : depende de abstraccion
+CurrencyConverter --> MoneyAmount
+CurrencyConverter --> Conversion
+Conversion --> CurrencyRate
+
+CurrencyApiProvider ..|> CurrencyRateProvider
+CurrencyApiProvider ..|> CurrencyCatalog
+CurrencyApiProvider --> CurrencyApiClient : depende de abstraccion
+CurrencyApiProvider --> HttpResponse
+CurrencyApiProvider --> Gson
+
+FreeCurrencyApiClient ..|> CurrencyApiClient
+FreeCurrencyApiClient --> HttpClient : depende de abstraccion
+FreeCurrencyApiClient --> HttpResponse
+
+UnirestHttpClient ..|> HttpClient
+UnirestHttpClient --> Unirest : usa
+
+Main --> CurrencyConverter
+Main --> CurrencyApiProvider
+Main --> FreeCurrencyApiClient
+Main --> UnirestHttpClient
+
+note "Inversion correcta:\nCurrencyConverter depende de CurrencyRateProvider,\nno de CurrencyApiProvider." as N1
+N1 .. CurrencyConverter
+
+note "Inversion correcta:\nFreeCurrencyApiClient depende de HttpClient,\nno de UnirestHttpClient." as N2
+N2 .. FreeCurrencyApiClient
+
+note "Acoplamiento pendiente:\nCurrencyApiProvider conoce Gson y HttpResponse,\nademas de traducir el contrato de la API." as N3
+N3 .. CurrencyApiProvider
+
+@enduml
