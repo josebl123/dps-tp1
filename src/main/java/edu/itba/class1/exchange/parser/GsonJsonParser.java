@@ -1,7 +1,7 @@
 package edu.itba.class1.exchange.parser;
 
 import com.google.gson.Gson;
-
+import com.google.gson.JsonSyntaxException;
 
 public class GsonJsonParser implements JsonParser {
 
@@ -11,7 +11,7 @@ public class GsonJsonParser implements JsonParser {
     public <T> T parse(String json, Class<T> targetType) {
         try {
             return gson.fromJson(json, targetType);
-        } catch (RuntimeException exception) {
+        } catch (JsonSyntaxException exception) {
             throw new JsonParseException(exception);
         }
     }
