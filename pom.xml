@@ -178,10 +178,6 @@
                     <excludes>
                         <!-- Composition root: solo cablea dependencias, no tiene logica propia. -->
                         <exclude>Main.class</exclude>
-                        <!-- Adapter sobre la API estatica de Unirest: las lineas restantes son
-                             delegacion pura a la libreria. Su unica decision propia (el manejo de
-                             fallas de conexion) esta cubierta por UnirestHttpClientTest. -->
-                        <exclude>edu/itba/class1/exchange/UnirestHttpClient.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>

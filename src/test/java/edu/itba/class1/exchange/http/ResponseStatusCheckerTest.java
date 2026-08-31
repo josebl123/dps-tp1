@@ -20,6 +20,14 @@ class ResponseStatusCheckerTest {
     }
 
     @Test
+    void rejectsStatusCodesOutsideTheSuccessfulRange() {
+        assertThatThrownBy(() -> checker.check(new HttpResponse("", 199)))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> checker.check(new HttpResponse("", 300)))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void usesTheFactoryConfiguredForTheStatus() {
         assertThatThrownBy(() -> checker.check(new HttpResponse("", 404)))
                 .isInstanceOf(IllegalStateException.class)
