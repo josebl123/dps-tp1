@@ -33,15 +33,7 @@ class FreeCurrencyApiClientTest {
     private static final Currency JPY = Currency.getInstance("JPY");
 
     private final HttpClient httpClient = mock(HttpClient.class);
-    private final FreeCurrencyApiClient client = new FreeCurrencyApiClient(
-            httpClient, new GsonJsonParser(), new ResponseStatusChecker(
-                    Map.of(
-                            401, AuthenticationFailedException::new,
-                            403, AuthenticationFailedException::new,
-                            404, CurrencyProviderResourceNotFoundException::new,
-                            422, InvalidProviderRequestException::new,
-                            429, CurrencyProviderRateLimitException::new),
-                    () -> new CurrencyProviderException("Currency provider request failed")));
+    private final FreeCurrencyApiClient client = new FreeCurrencyApiClient(httpClient, new GsonJsonParser());
 
     @BeforeEach
     void returnAnEmptyResponse() {
@@ -49,20 +41,11 @@ class FreeCurrencyApiClientTest {
     }
 
     @Test
-    void buildsSingleRateRequest() {
-        client.getCurrencyRate(USD, EUR);
-
-        assertThat(capturedUrl()).isEqualTo(URI.create("https://api.currencyapi.com/v3/latest"));
-        assertThat(capturedQuery()).containsEntry("base_currency", USD)
-                .containsEntry("currencies", EUR);
-    }
-
-    @Test
     void buildsLatestRateRequest() {
         client.getMultipleCurrencyRates(USD, List.of(EUR, JPY));
 
         assertThat(capturedUrl()).isEqualTo(URI.create("https://api.currencyapi.com/v3/latest"));
-        assertThat(capturedQuery()).containsEntry("base_currency", USD)
+        assertThat(capturedQuery()).containsEntry("base_currency", "USD")
                 .containsEntry("currencies", "EUR,JPY");
     }
 
@@ -71,7 +54,7 @@ class FreeCurrencyApiClientTest {
         client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), LocalDate.of(2024, 11, 20));
 
         assertThat(capturedUrl()).isEqualTo(URI.create("https://api.currencyapi.com/v3/historical"));
-        assertThat(capturedQuery()).containsEntry("base_currency", USD)
+        assertThat(capturedQuery()).containsEntry("base_currency", "USD")
                 .containsEntry("currencies", "EUR")
                 .containsEntry("date", "2024-11-20");
     }
@@ -86,10 +69,9 @@ class FreeCurrencyApiClientTest {
 
     @Test
     void mapsAuthenticationStatusesToAuthenticationFailure() {
-        when(httpClient.get(any(), any(), any()))
-                .thenReturn(new HttpResponse("{}", 401));
+        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{}", 401));
 
-        assertThatThrownBy(() -> client.getCurrencyRate(USD, EUR))
+        assertThatThrownBy(() -> client.getMultipleCurrencyRates(USD, List.of(EUR)))
                 .isExactlyInstanceOf(AuthenticationFailedException.class);
     }
 
@@ -126,11 +108,19 @@ class FreeCurrencyApiClientTest {
     }
 
     @Test
-    void doesNotParseAnErrorResponse() {
-        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("bad", 500));
+    void reportsTheStatusAndBodyOfTheFailedRequest() {
+        when(httpClient.get(any(), any(), any()))
+                .thenReturn(new HttpResponse("{\"message\":\"Invalid authentication credentials\"}", 401));
 
-        assertThatThrownBy(client::getAvailableCurrencies)
-                .isExactlyInstanceOf(CurrencyProviderException.class);
+        assertThatThrownBy(() -> client.getMultipleCurrencyRates(USD, List.of(EUR)))
+                .isExactlyInstanceOf(AuthenticationFailedException.class)
+                .hasMessageContaining("401")
+                .hasMessageContaining("Invalid authentication credentials")
+                .satisfies(thrown -> {
+                    var exception = (CurrencyProviderException) thrown;
+                    assertThat(exception.statusCode()).isEqualTo(401);
+                    assertThat(exception.responseBody()).contains("Invalid authentication credentials");
+                });
     }
 
     @Test
@@ -138,7 +128,9 @@ class FreeCurrencyApiClientTest {
         when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{malformed", 200));
 
         assertThatThrownBy(client::getAvailableCurrencies)
-                .isExactlyInstanceOf(InvalidProviderResponseException.class);
+                .isExactlyInstanceOf(InvalidProviderResponseException.class)
+                .hasMessageContaining("{malformed")
+                .hasCauseInstanceOf(RuntimeException.class);
     }
 
     private URI capturedUrl() {
