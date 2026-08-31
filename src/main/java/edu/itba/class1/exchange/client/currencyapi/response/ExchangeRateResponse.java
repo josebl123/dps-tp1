@@ -1,4 +1,4 @@
-package edu.itba.class1.exchange.model;
+package edu.itba.class1.exchange.client.currencyapi.response;
 
 import java.math.BigDecimal;
 import java.util.Map;
