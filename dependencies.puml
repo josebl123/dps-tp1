@@ -14,19 +14,26 @@ skinparam package<<Domain>> {
 
 legend right
   ..|>  Implementa una interfaz
+  <|--  Hereda de
   -->   Dependencia directa
-  ..>   Uso o dependencia
+  ..>   Uso o creacion
 endlegend
 
-package "DOMINIO" <<Domain>> {
+package "DOMINIO  (model + service)" <<Domain>> {
+
     class CurrencyConverter {
         -currencyRateProvider: CurrencyRateProvider
         +convert(moneyAmount: MoneyAmount, to: Currency): Conversion
+        +convertMultiple(moneyAmount: MoneyAmount, to: Collection): Collection
+        +historicalConvert(moneyAmount: MoneyAmount, to: Currency, date: LocalDate): Conversion
+        +historicalMultipleConvert(moneyAmount: MoneyAmount, to: Collection, date: LocalDate): Collection
     }
 
     class MoneyAmount {
         currency: Currency
         amount: BigDecimal
+        +add(other: MoneyAmount): MoneyAmount
+        +multiply(rate: BigDecimal): BigDecimal
     }
 
     class CurrencyRate {
@@ -55,7 +62,7 @@ package "DOMINIO" <<Domain>> {
     class RateNotAvailableException <<domain exception>>
 }
 
-package "ADAPTADOR DE APLICACION" {
+package "ADAPTADOR DE APLICACION  (client.currencyapi)" {
     class CurrencyApiProvider {
         -currencyApiClient: CurrencyApiClient
         +getCurrencyRate(...): CurrencyRate
@@ -64,50 +71,63 @@ package "ADAPTADOR DE APLICACION" {
         +getHistoricalMultipleCurrencyRates(...): Collection
         +getAvailableCurrencies(): Collection
     }
-}
 
-package "PUERTO DE INTEGRACION" {
     interface CurrencyApiClient <<integration port>> {
         +getCurrencyRate(...): ExchangeRateResponse
         +getMultipleCurrencyRates(...): ExchangeRateResponse
+        +getHistoricalMultipleCurrencyRates(...): HistoricalExchangeRateResponse
         +getAvailableCurrencies(): AvailableCurrenciesResponse
-        +getHistoricalMultipleCurrencyRates(...): ExchangeRateResponse
     }
-}
 
-package "INFRAESTRUCTURA / FREECURRENCYAPI" {
     class FreeCurrencyApiClient {
         -httpClient: HttpClient
         -jsonParser: JsonParser
-        -statusChecker: ResponseStatusChecker
+        -responseStatusChecker: ResponseStatusChecker
+        +{static} defaultStatusChecker(): ResponseStatusChecker
     }
+}
 
-    class ResponseStatusChecker {
-        -errors: Map
-        +check(response: HttpResponse): void
+package "DTOs DE LA API  (client.currencyapi.response)" {
+    class ExchangeRateResponse <<external DTO>>
+    class HistoricalExchangeRateResponse <<external DTO>>
+    class AvailableCurrenciesResponse <<external DTO>>
+}
+
+package "ERRORES DE INTEGRACION  (client.error)" {
+    class CurrencyProviderException <<integration exception>> {
+        -statusCode: int
+        -responseBody: String
     }
+    class AuthenticationFailedException
+    class CurrencyProviderRateLimitException
+    class CurrencyProviderResourceNotFoundException
+    class InvalidProviderRequestException
+    class InvalidProviderResponseException
+}
 
+package "HTTP  (http)" {
     interface HttpClient {
         +get(url: URI, queryParams: Map, headers: Map): HttpResponse
     }
-
     class UnirestHttpClient
+    class HttpResponse {
+        body: String
+        statusCode: int
+    }
+    class ResponseStatusChecker {
+        -errors: Map<Integer, Function>
+        -defaultError: Function
+        +check(response: HttpResponse): void
+    }
+    class HttpTransportException <<infrastructure exception>>
+}
+
+package "PARSER  (parser)" {
     interface JsonParser {
         +parse(json: String, type: Class): Object
     }
-
     class GsonJsonParser
-    class HttpResponse
-    class ExchangeRateResponse <<external DTO>>
-    class AvailableCurrenciesResponse <<external DTO>>
-
-    class HttpTransportException <<infrastructure exception>>
-    class CurrencyProviderException <<integration exception>>
-    class AuthenticationFailedException <<integration exception>>
-    class CurrencyProviderRateLimitException <<integration exception>>
-    class CurrencyProviderResourceNotFoundException <<integration exception>>
-    class InvalidProviderRequestException <<integration exception>>
-    class InvalidProviderResponseException <<integration exception>>
+    class JsonParseException <<parser exception>>
 }
 
 package "LIBRERIAS EXTERNAS" {
@@ -122,12 +142,14 @@ package "COMPOSICION" {
 CurrencyConverter --> CurrencyRateProvider : depende de abstraccion
 CurrencyConverter --> MoneyAmount
 CurrencyConverter --> Conversion
+Conversion --> MoneyAmount
 Conversion --> CurrencyRate
 
 CurrencyApiProvider ..|> CurrencyRateProvider
 CurrencyApiProvider ..|> CurrencyCatalog
 CurrencyApiProvider --> CurrencyApiClient : depende de abstraccion
 CurrencyApiProvider --> ExchangeRateResponse : traduce DTO a dominio
+CurrencyApiProvider --> HistoricalExchangeRateResponse
 CurrencyApiProvider --> AvailableCurrenciesResponse
 CurrencyApiProvider ..> RateNotAvailableException : crea ante tasa ausente
 
@@ -136,16 +158,25 @@ FreeCurrencyApiClient --> HttpClient : depende de abstraccion
 FreeCurrencyApiClient --> JsonParser : depende de abstraccion
 FreeCurrencyApiClient --> ResponseStatusChecker
 FreeCurrencyApiClient --> ExchangeRateResponse
+FreeCurrencyApiClient --> HistoricalExchangeRateResponse
 FreeCurrencyApiClient --> AvailableCurrenciesResponse
 
+CurrencyProviderException <|-- AuthenticationFailedException
+CurrencyProviderException <|-- CurrencyProviderRateLimitException
+CurrencyProviderException <|-- CurrencyProviderResourceNotFoundException
+CurrencyProviderException <|-- InvalidProviderRequestException
+CurrencyProviderException <|-- InvalidProviderResponseException
+CurrencyProviderException --> HttpResponse : conserva status y body
+
 ResponseStatusChecker --> HttpResponse
-ResponseStatusChecker --> CurrencyProviderException : crea segun status
+ResponseStatusChecker ..> CurrencyProviderException : crea segun status
+
 UnirestHttpClient ..|> HttpClient
 UnirestHttpClient ..> HttpTransportException : lanza ante falla de transporte
+UnirestHttpClient --> Unirest
 
 GsonJsonParser ..|> JsonParser
-GsonJsonParser ..> InvalidProviderResponseException : crea ante JSON invalido
-UnirestHttpClient --> Unirest
+GsonJsonParser ..> JsonParseException : crea ante JSON invalido
 GsonJsonParser --> Gson
 
 Main --> CurrencyConverter
@@ -157,15 +188,29 @@ Main --> GsonJsonParser
 note bottom of CurrencyConverter
   Inversion correcta: el dominio depende de CurrencyRateProvider,
   no de CurrencyApiProvider ni de FreeCurrencyApiClient.
+  Sin interfaz propia: nadie necesita depender del converter
+  sin conocer su implementacion.
 end note
 
 note bottom of Main
   Dependencias concretas intencionales: Main es el composition root.
+  Es el unico punto que captura las excepciones y las notifica.
 end note
 
 note right of ResponseStatusChecker
-  Usa un Map de status a factories.
-  No parsea JSON ni crea excepciones de dominio.
+  Usa un Map de status a factories de excepcion.
+  Vive en http: no parsea JSON ni conoce el dominio.
 end note
+
+note as N1
+  Las tres jerarquias de excepcion no comparten raiz:
+  CurrencyProviderException, HttpTransportException
+  y RateNotAvailableException extienden RuntimeException
+  por separado, asi que Main captura las tres.
+end note
+
+N1 .. CurrencyProviderException
+N1 .. HttpTransportException
+N1 .. RateNotAvailableException
 
 @enduml
