@@ -17,6 +17,10 @@ public record MoneyAmount(Currency currency, BigDecimal amount) {
 		amount = amount.setScale(currency.getDefaultFractionDigits(), RoundingMode.HALF_EVEN);
 	}
 
+	public MoneyAmount convertWithRate(CurrencyRate rate) {
+		return new MoneyAmount(rate.toCurrency(), this.amount.multiply(rate.rate()));
+	}
+
 	public MoneyAmount add(MoneyAmount other) {
 		if (!this.currency.equals(other.currency)) {
 			throw new IllegalArgumentException("Cannot add amounts with different currencies");
