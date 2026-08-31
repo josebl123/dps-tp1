@@ -3,7 +3,7 @@ package edu.itba.class1.exchange.parser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import edu.itba.class1.exchange.ExchangeRateResponse;
+import edu.itba.class1.exchange.model.ExchangeRateResponse;
 import org.junit.jupiter.api.Test;
 import com.google.gson.JsonSyntaxException;
 

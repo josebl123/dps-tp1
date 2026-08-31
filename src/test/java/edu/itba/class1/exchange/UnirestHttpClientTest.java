@@ -1,4 +1,4 @@
-package edu.itba.class1.exchange;
+package edu.itba.class1.exchange.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

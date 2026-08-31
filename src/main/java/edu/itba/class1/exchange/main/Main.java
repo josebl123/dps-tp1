@@ -1,5 +1,12 @@
-import edu.itba.class1.exchange.*;
+import edu.itba.class1.exchange.client.FreeCurrencyApiClient;
+import edu.itba.class1.exchange.http.UnirestHttpClient;
+import edu.itba.class1.exchange.model.MoneyAmount;
 import edu.itba.class1.exchange.parser.GsonJsonParser;
+import edu.itba.class1.exchange.service.CurrencyApiProvider;
+import edu.itba.class1.exchange.service.CurrencyConverter;
+
+import java.math.BigDecimal;
+import java.util.Currency;
 
 void main() {
 	final var httpClient = new UnirestHttpClient();

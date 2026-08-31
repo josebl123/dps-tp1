@@ -1,4 +1,7 @@
-package edu.itba.class1.exchange;
+package edu.itba.class1.exchange.client;
+
+import edu.itba.class1.exchange.model.AvailableCurrenciesResponse;
+import edu.itba.class1.exchange.model.ExchangeRateResponse;
 
 import java.time.LocalDate;
 import java.util.Collection;

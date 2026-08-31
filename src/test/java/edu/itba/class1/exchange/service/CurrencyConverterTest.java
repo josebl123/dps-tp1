@@ -1,4 +1,4 @@
-package edu.itba.class1.exchange;
+package edu.itba.class1.exchange.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -10,6 +10,10 @@ import java.util.Currency;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+
+import edu.itba.class1.exchange.model.Conversion;
+import edu.itba.class1.exchange.model.CurrencyRate;
+import edu.itba.class1.exchange.model.MoneyAmount;
 
 class CurrencyConverterTest {
     private static final Currency USD = Currency.getInstance("USD");

@@ -1,5 +1,8 @@
-package edu.itba.class1.exchange;
+package edu.itba.class1.exchange.service;
 
+import edu.itba.class1.exchange.client.CurrencyApiClient;
+import edu.itba.class1.exchange.model.CurrencyRate;
+import edu.itba.class1.exchange.model.ExchangeRateResponse;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDate;

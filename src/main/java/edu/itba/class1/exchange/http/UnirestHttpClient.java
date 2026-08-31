@@ -1,11 +1,9 @@
-package edu.itba.class1.exchange;
+package edu.itba.class1.exchange.http;
 
 
 
 import com.mashape.unirest.http.Unirest;
 
-import edu.itba.class1.exchange.http.HttpClient;
-import edu.itba.class1.exchange.http.HttpResponse;
 
 import java.net.URI;
 import java.util.Map;

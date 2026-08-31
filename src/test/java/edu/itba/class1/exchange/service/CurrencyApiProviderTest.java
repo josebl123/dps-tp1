@@ -1,4 +1,4 @@
-package edu.itba.class1.exchange;
+package edu.itba.class1.exchange.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -7,6 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import edu.itba.class1.exchange.parser.GsonJsonParser;
+import edu.itba.class1.exchange.client.CurrencyApiClient;
+import edu.itba.class1.exchange.model.CurrencyRate;
+import edu.itba.class1.exchange.model.ExchangeRateResponse;
 
 import java.math.BigDecimal;
 import java.time.Instant;

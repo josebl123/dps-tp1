@@ -1,5 +1,6 @@
-package edu.itba.class1.exchange;
+package edu.itba.class1.exchange.service;
 
+import edu.itba.class1.exchange.model.CurrencyRate;
 
 
 import java.time.LocalDate;

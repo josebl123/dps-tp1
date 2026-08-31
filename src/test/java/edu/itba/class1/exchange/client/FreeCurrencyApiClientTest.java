@@ -1,4 +1,4 @@
-package edu.itba.class1.exchange;
+package edu.itba.class1.exchange.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import edu.itba.class1.exchange.http.HttpClient;
 import edu.itba.class1.exchange.http.HttpResponse;
 import edu.itba.class1.exchange.parser.GsonJsonParser;
+import edu.itba.class1.exchange.error.CurrencyApiException;
 
 import java.net.URI;
 import java.time.LocalDate;
