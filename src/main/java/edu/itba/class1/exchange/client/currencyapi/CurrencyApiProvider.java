@@ -38,7 +38,7 @@ public class CurrencyApiProvider implements CurrencyRateProvider, CurrencyCatalo
     public Collection<CurrencyRate> getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
         final var exchangeRateResponse = this.currencyApiClient.getHistoricalMultipleCurrencyRates(fromCurrency, toCurrencies, date);
         return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency,
-                exchangeRateResponse.findExchange(toCurrency.getCurrencyCode())
+                exchangeRateResponse.findExchange(date, toCurrency.getCurrencyCode())
                         .orElseThrow(() -> new RateNotAvailableException(fromCurrency, toCurrency, date)), date))
                 .toList();
 

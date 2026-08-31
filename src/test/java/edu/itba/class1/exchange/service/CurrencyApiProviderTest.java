@@ -13,6 +13,7 @@ import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 import edu.itba.class1.exchange.model.CurrencyRate;
 import edu.itba.class1.exchange.client.currencyapi.response.AvailableCurrenciesResponse;
 import edu.itba.class1.exchange.client.currencyapi.response.ExchangeRateResponse;
+import edu.itba.class1.exchange.client.currencyapi.response.HistoricalExchangeRateResponse;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -33,7 +34,7 @@ class CurrencyApiProviderTest {
     @Test
     void mapsMultipleRatesFromApiResponse() {
         when(client.getMultipleCurrencyRates(USD, List.of(EUR, JPY)))
-                .thenReturn(rates("{\"data\":{\"EUR\":{\"code\":\"EUR\",\"value\":0.92},\"JPY\":{\"code\":\"JPY\",\"value\":145.5}}}"));
+                .thenReturn(rates("{\"data\":{\"EUR\":0.92,\"JPY\":145.5}}"));
 
         var rates = provider.getMultipleCurrencyRates(USD, List.of(EUR, JPY));
 
@@ -46,7 +47,7 @@ class CurrencyApiProviderTest {
     @Test
     void getsOneRateUsingTheMultipleRatesContract() {
         when(client.getMultipleCurrencyRates(USD, List.of(EUR)))
-                .thenReturn(rates("{\"data\":{\"EUR\":{\"code\":\"EUR\",\"value\":0.92}}}"));
+                .thenReturn(rates("{\"data\":{\"EUR\":0.92}}"));
 
         var rate = provider.getCurrencyRate(USD, EUR);
 
@@ -76,7 +77,7 @@ class CurrencyApiProviderTest {
     void mapsHistoricalRates() {
         var date = LocalDate.of(2024, 11, 20);
         when(client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date))
-                .thenReturn(rates("{\"data\":{\"EUR\":{\"code\":\"EUR\",\"value\":0.91}}}"));
+                .thenReturn(historicalRates("{\"data\":{\"2024-11-20\":{\"EUR\":0.91}}}"));
 
         var rates = provider.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date);
 
@@ -92,7 +93,7 @@ class CurrencyApiProviderTest {
     void getsOneHistoricalRateUsingTheMultipleRatesContract() {
         var date = LocalDate.of(2024, 11, 20);
         when(client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date))
-                .thenReturn(rates("{\"data\":{\"EUR\":{\"code\":\"EUR\",\"value\":0.91}}}"));
+                .thenReturn(historicalRates("{\"data\":{\"2024-11-20\":{\"EUR\":0.91}}}"));
 
         var rate = provider.getHistoricalCurrencyRate(USD, EUR, date);
 
@@ -100,6 +101,17 @@ class CurrencyApiProviderTest {
         assertThat(rate.rate()).isEqualByComparingTo("0.91");
         assertThat(rate.timestamp()).isEqualTo(Instant.parse("2024-11-20T00:00:00Z"));
         verify(client).getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date);
+    }
+
+    @Test
+    void reportsWhenHistoricalApiDoesNotReturnARequestedRate() {
+        var date = LocalDate.of(2024, 11, 20);
+        when(client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date))
+                .thenReturn(historicalRates("{\"data\":{\"2024-11-20\":{}}}"));
+
+        assertThatThrownBy(() -> provider.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date))
+                .isExactlyInstanceOf(RateNotAvailableException.class)
+                .hasMessage("No exchange rate available from USD to EUR for 2024-11-20");
     }
 
     @Test
@@ -113,6 +125,10 @@ class CurrencyApiProviderTest {
 
     private static ExchangeRateResponse rates(String body) {
         return new GsonJsonParser().parse(body, ExchangeRateResponse.class);
+    }
+
+    private static HistoricalExchangeRateResponse historicalRates(String body) {
+        return new GsonJsonParser().parse(body, HistoricalExchangeRateResponse.class);
     }
 
     private static AvailableCurrenciesResponse currencies(String body) {

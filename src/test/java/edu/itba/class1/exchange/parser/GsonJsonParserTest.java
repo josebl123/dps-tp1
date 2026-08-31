@@ -12,7 +12,7 @@ class GsonJsonParserTest {
 
     @Test
     void parsesJsonIntoTheRequestedType() {
-        var response = parser.parse("{\"data\":{\"EUR\":{\"code\":\"EUR\",\"value\":0.92}}}", ExchangeRateResponse.class);
+        var response = parser.parse("{\"data\":{\"EUR\":0.92}}", ExchangeRateResponse.class);
 
         assertThat(response.findExchange("EUR")).hasValue(new BigDecimal("0.92"));
     }

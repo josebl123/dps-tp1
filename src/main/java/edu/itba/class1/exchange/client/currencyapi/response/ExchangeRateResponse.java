@@ -8,13 +8,10 @@ import lombok.Setter;
 
 @Setter
 public class ExchangeRateResponse {
-    private Map<String, CurrencyData> data;
+    private Map<String, BigDecimal> data;
 
 	public Optional<BigDecimal> findExchange(final String toCurrency) {
 		return Optional.ofNullable(data)
-				.map(rates -> rates.get(toCurrency))
-				.map(CurrencyData::value);
+				.map(rates -> rates.get(toCurrency));
 	}
-
-	private record CurrencyData(String code, BigDecimal value) {}
 }

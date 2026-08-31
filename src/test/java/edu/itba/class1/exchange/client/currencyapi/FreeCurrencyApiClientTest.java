@@ -44,7 +44,7 @@ class FreeCurrencyApiClientTest {
     void buildsLatestRateRequest() {
         client.getMultipleCurrencyRates(USD, List.of(EUR, JPY));
 
-        assertThat(capturedUrl()).isEqualTo(URI.create("https://api.currencyapi.com/v3/latest"));
+        assertThat(capturedUrl()).isEqualTo(URI.create("https://api.freecurrencyapi.com/v1/latest"));
         assertThat(capturedQuery()).containsEntry("base_currency", "USD")
                 .containsEntry("currencies", "EUR,JPY");
     }
@@ -53,7 +53,7 @@ class FreeCurrencyApiClientTest {
     void buildsHistoricalRateRequest() {
         client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), LocalDate.of(2024, 11, 20));
 
-        assertThat(capturedUrl()).isEqualTo(URI.create("https://api.currencyapi.com/v3/historical"));
+        assertThat(capturedUrl()).isEqualTo(URI.create("https://api.freecurrencyapi.com/v1/historical"));
         assertThat(capturedQuery()).containsEntry("base_currency", "USD")
                 .containsEntry("currencies", "EUR")
                 .containsEntry("date", "2024-11-20");
@@ -63,8 +63,29 @@ class FreeCurrencyApiClientTest {
     void buildsAvailableCurrenciesRequest() {
         client.getAvailableCurrencies();
 
-        assertThat(capturedUrl()).isEqualTo(URI.create("https://api.currencyapi.com/v3/currencies"));
+        assertThat(capturedUrl()).isEqualTo(URI.create("https://api.freecurrencyapi.com/v1/currencies"));
         assertThat(capturedQuery()).isEmpty();
+    }
+
+    @Test
+    void parsesTheLatestResponseShape() {
+        when(httpClient.get(any(), any(), any()))
+                .thenReturn(new HttpResponse("{\"data\":{\"EUR\":0.918456}}", 200));
+
+        var response = client.getMultipleCurrencyRates(USD, List.of(EUR));
+
+        assertThat(response.findExchange("EUR")).isPresent();
+    }
+
+    @Test
+    void parsesTheHistoricalResponseShape() {
+        var date = LocalDate.of(2024, 11, 20);
+        when(httpClient.get(any(), any(), any()))
+                .thenReturn(new HttpResponse("{\"data\":{\"2024-11-20\":{\"EUR\":0.879908}}}", 200));
+
+        var response = client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date);
+
+        assertThat(response.findExchange(date, "EUR")).isPresent();
     }
 
     @Test

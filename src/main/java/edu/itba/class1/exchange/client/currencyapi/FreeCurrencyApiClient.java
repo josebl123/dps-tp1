@@ -2,6 +2,7 @@ package edu.itba.class1.exchange.client.currencyapi;
 
 import edu.itba.class1.exchange.client.currencyapi.response.AvailableCurrenciesResponse;
 import edu.itba.class1.exchange.client.currencyapi.response.ExchangeRateResponse;
+import edu.itba.class1.exchange.client.currencyapi.response.HistoricalExchangeRateResponse;
 import edu.itba.class1.exchange.client.error.AuthenticationFailedException;
 import edu.itba.class1.exchange.client.error.CurrencyProviderException;
 import edu.itba.class1.exchange.client.error.CurrencyProviderRateLimitException;
@@ -25,8 +26,8 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
     private final HttpClient httpClient;
     private final JsonParser jsonParser;
     private final ResponseStatusChecker responseStatusChecker;
-    private static final String BASE_URL = "https://api.currencyapi.com/v3";
-    private static final String API_KEY = "cur_live_33r7xmpvu4kiAmeK4XZrotAn84qT4SMnPlP9Use1";
+    private static final String BASE_URL = "https://api.freecurrencyapi.com/v1";
+    private static final String API_KEY = "fca_live_lOuYu1BdnuDDXjOBIHYivtJ2qEKZPgjpc0GtN7hV";
     private static final Map<String, String> API_HEADERS = Map.of("accept", "application/json", "apikey", API_KEY);
 
     public FreeCurrencyApiClient(HttpClient httpClient, JsonParser jsonParser) {
@@ -57,10 +58,10 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
     }
 
     @Override
-    public ExchangeRateResponse getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
+    public HistoricalExchangeRateResponse getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
         return this.getParsedResponse(URI.create(BASE_URL + "/historical"),
                 Map.of("base_currency", fromCurrency.getCurrencyCode(), "currencies", joinCodes(toCurrencies), "date", date.toString()),
-                ExchangeRateResponse.class);
+                HistoricalExchangeRateResponse.class);
     }
 
     private static String joinCodes(Collection<Currency> currencies) {
