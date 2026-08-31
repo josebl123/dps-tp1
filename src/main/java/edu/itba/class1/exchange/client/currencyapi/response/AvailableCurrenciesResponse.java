@@ -15,5 +15,5 @@ public class AvailableCurrenciesResponse {
         return availableCurrencies.stream().map(Currency::getInstance).toList();
     }
 
-	private record CurrencyData(String code, Object currencyInfo) {}
+	private record CurrencyData(String code) {}
 }
