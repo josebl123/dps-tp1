@@ -1,4 +1,5 @@
 import edu.itba.class1.exchange.client.FreeCurrencyApiClient;
+import edu.itba.class1.exchange.client.ResponseStatusChecker;
 import edu.itba.class1.exchange.http.UnirestHttpClient;
 import edu.itba.class1.exchange.model.MoneyAmount;
 import edu.itba.class1.exchange.parser.GsonJsonParser;
@@ -11,7 +12,7 @@ import java.util.Currency;
 void main() {
 	final var httpClient = new UnirestHttpClient();
 	final var parser = new GsonJsonParser();
-	final var currencyApiClient = new FreeCurrencyApiClient(httpClient, parser);
+	final var currencyApiClient = new FreeCurrencyApiClient(httpClient, parser, ResponseStatusChecker.forCurrencyProvider());
 	final var provider = new CurrencyApiProvider(currencyApiClient);
 	final var converter = new CurrencyConverter(provider);
 	final var ars = new MoneyAmount(Currency.getInstance("ARS"), BigDecimal.valueOf(100.0));

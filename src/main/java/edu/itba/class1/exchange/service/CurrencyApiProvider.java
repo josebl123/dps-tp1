@@ -1,6 +1,7 @@
 package edu.itba.class1.exchange.service;
 
 import edu.itba.class1.exchange.client.CurrencyApiClient;
+import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 import edu.itba.class1.exchange.model.CurrencyRate;
 import edu.itba.class1.exchange.model.ExchangeRateResponse;
 import lombok.AllArgsConstructor;
@@ -23,7 +24,9 @@ public class CurrencyApiProvider implements CurrencyRateProvider, CurrencyCatalo
 	@Override
 	public Collection<CurrencyRate> getMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies) {
 		final var exchangeRateResponse = this.currencyApiClient.getMultipleCurrencyRates(fromCurrency, toCurrencies);
-		return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency, exchangeRateResponse.getExchange(toCurrency.getCurrencyCode())))
+		return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency,
+				exchangeRateResponse.findExchange(toCurrency.getCurrencyCode())
+						.orElseThrow(() -> new RateNotAvailableException(fromCurrency, toCurrency))))
 				.toList();
 	}
 
@@ -35,7 +38,9 @@ public class CurrencyApiProvider implements CurrencyRateProvider, CurrencyCatalo
 	@Override
 	public Collection<CurrencyRate> getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
 		final var exchangeRateResponse = this.currencyApiClient.getHistoricalMultipleCurrencyRates(fromCurrency, toCurrencies, date);
-		return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency, exchangeRateResponse.getExchange(toCurrency.getCurrencyCode()), date))
+		return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency,
+				exchangeRateResponse.findExchange(toCurrency.getCurrencyCode())
+						.orElseThrow(() -> new RateNotAvailableException(fromCurrency, toCurrency, date)), date))
 				.toList();
 
 	}

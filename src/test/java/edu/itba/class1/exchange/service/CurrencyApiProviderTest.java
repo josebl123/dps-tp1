@@ -8,7 +8,9 @@ import static org.mockito.Mockito.when;
 
 import edu.itba.class1.exchange.parser.GsonJsonParser;
 import edu.itba.class1.exchange.client.CurrencyApiClient;
+import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 import edu.itba.class1.exchange.model.CurrencyRate;
+import edu.itba.class1.exchange.model.AvailableCurrenciesResponse;
 import edu.itba.class1.exchange.model.ExchangeRateResponse;
 
 import java.math.BigDecimal;
@@ -65,8 +67,8 @@ class CurrencyApiProviderTest {
                 .thenReturn(rates("{\"data\":{}}"));
 
         assertThatThrownBy(() -> provider.getMultipleCurrencyRates(USD, List.of(EUR)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Missing exchange rate for currency: EUR");
+                .isExactlyInstanceOf(RateNotAvailableException.class)
+                .hasMessage("No exchange rate available from USD to EUR");
     }
 
     @Test

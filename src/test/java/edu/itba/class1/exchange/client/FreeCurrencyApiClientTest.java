@@ -2,7 +2,6 @@ package edu.itba.class1.exchange.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -11,7 +10,11 @@ import static org.mockito.Mockito.when;
 import edu.itba.class1.exchange.http.HttpClient;
 import edu.itba.class1.exchange.http.HttpResponse;
 import edu.itba.class1.exchange.parser.GsonJsonParser;
-import edu.itba.class1.exchange.error.CurrencyApiException;
+import edu.itba.class1.exchange.client.error.AuthenticationFailedException;
+import edu.itba.class1.exchange.client.error.CurrencyProviderException;
+import edu.itba.class1.exchange.client.error.CurrencyProviderRateLimitException;
+import edu.itba.class1.exchange.client.error.CurrencyProviderResourceNotFoundException;
+import edu.itba.class1.exchange.client.error.InvalidProviderRequestException;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -29,7 +32,8 @@ class FreeCurrencyApiClientTest {
     private static final Currency JPY = Currency.getInstance("JPY");
 
     private final HttpClient httpClient = mock(HttpClient.class);
-    private final FreeCurrencyApiClient client = new FreeCurrencyApiClient(httpClient, new GsonJsonParser());
+    private final FreeCurrencyApiClient client = new FreeCurrencyApiClient(
+            httpClient, new GsonJsonParser(), ResponseStatusChecker.forCurrencyProvider());
 
     @BeforeEach
     void returnAnEmptyResponse() {
@@ -73,23 +77,52 @@ class FreeCurrencyApiClientTest {
     }
 
     @Test
-    void failsWhenTheApiRespondsWithAnError() {
+    void mapsAuthenticationStatusesToAuthenticationFailure() {
         when(httpClient.get(any(), any(), any()))
-                .thenReturn(new HttpResponse("{\"message\":\"Not Found\"}", 404));
+                .thenReturn(new HttpResponse("{}", 401));
 
         assertThatThrownBy(() -> client.getCurrencyRate(USD, EUR))
-                .isInstanceOf(CurrencyApiException.class)
-                .hasMessageContaining("404")
-                .hasMessageContaining("Not Found");
+                .isExactlyInstanceOf(AuthenticationFailedException.class);
     }
 
     @Test
-    void exposesTheStatusCodeOfTheFailedRequest() {
+    void mapsRateLimitStatusToRateLimitFailure() {
+        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{}", 429));
+
+        assertThatThrownBy(client::getAvailableCurrencies)
+                .isExactlyInstanceOf(CurrencyProviderRateLimitException.class);
+    }
+
+    @Test
+    void mapsNotFoundStatusToResourceNotFound() {
+        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{}", 404));
+
+        assertThatThrownBy(client::getAvailableCurrencies)
+                .isExactlyInstanceOf(CurrencyProviderResourceNotFoundException.class);
+    }
+
+    @Test
+    void mapsUnprocessableStatusToInvalidRequest() {
+        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{}", 422));
+
+        assertThatThrownBy(client::getAvailableCurrencies)
+                .isExactlyInstanceOf(InvalidProviderRequestException.class);
+    }
+
+    @Test
+    void mapsUnknownStatusToGenericProviderFailure() {
         when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{}", 500));
 
-        var thrown = assertThrows(CurrencyApiException.class, client::getAvailableCurrencies);
+        assertThatThrownBy(client::getAvailableCurrencies)
+                .isExactlyInstanceOf(CurrencyProviderException.class);
+    }
 
-        assertThat(thrown.statusCode()).isEqualTo(500);
+    @Test
+    void doesNotParseAnErrorResponse() {
+        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("bad", 500));
+
+        assertThatThrownBy(client::getAvailableCurrencies)
+                .isExactlyInstanceOf(CurrencyProviderException.class);
     }
 
     private URI capturedUrl() {
