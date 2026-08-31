@@ -10,6 +10,7 @@ import edu.itba.class1.exchange.client.error.CurrencyProviderResourceNotFoundExc
 import edu.itba.class1.exchange.client.error.InvalidProviderRequestException;
 import edu.itba.class1.exchange.client.error.InvalidProviderResponseException;
 import edu.itba.class1.exchange.http.HttpClient;
+import edu.itba.class1.exchange.http.HttpStatus;
 import edu.itba.class1.exchange.http.ResponseStatusChecker;
 import edu.itba.class1.exchange.parser.JsonParser;
 import edu.itba.class1.exchange.parser.JsonParseException;
@@ -20,7 +21,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Currency;
 import java.util.Map;
-import java.net.HttpURLConnection;
+
 @RequiredArgsConstructor
 public class FreeCurrencyApiClient implements CurrencyApiClient {
     private final HttpClient httpClient;
@@ -37,11 +38,11 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
     public static ResponseStatusChecker defaultStatusChecker() {
         return new ResponseStatusChecker(
                 Map.of(
-                        HttpURLConnection.HTTP_UNAUTHORIZED, AuthenticationFailedException::new,
-                        HttpURLConnection.HTTP_FORBIDDEN, AuthenticationFailedException::new,
-                        HttpURLConnection.HTTP_NOT_FOUND, CurrencyProviderResourceNotFoundException::new,
-                        422, InvalidProviderRequestException::new,
-                        429, CurrencyProviderRateLimitException::new),
+                        HttpStatus.UNAUTHORIZED.code(), AuthenticationFailedException::new,
+                        HttpStatus.FORBIDDEN.code(), AuthenticationFailedException::new,
+                        HttpStatus.NOT_FOUND.code(), CurrencyProviderResourceNotFoundException::new,
+                        HttpStatus.UNPROCESSABLE_CONTENT.code(), InvalidProviderRequestException::new,
+                        HttpStatus.TOO_MANY_REQUESTS.code(), CurrencyProviderRateLimitException::new),
                 response -> new CurrencyProviderException("Currency provider request failed", response));
     }
 

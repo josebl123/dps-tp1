@@ -14,7 +14,7 @@ public final class ResponseStatusChecker {
     }
 
     public void check(HttpResponse response) {
-        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+        if (response.isSuccessful()) {
             return;
         }
         throw errors.getOrDefault(response.statusCode(), defaultError).apply(response);

@@ -2,7 +2,6 @@ package edu.itba.class1.exchange.service;
 
 import edu.itba.class1.exchange.model.Conversion;
 import edu.itba.class1.exchange.model.MoneyAmount;
-import edu.itba.class1.exchange.model.CurrencyRate;
 
 
 import lombok.RequiredArgsConstructor;
