@@ -20,7 +20,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Currency;
 import java.util.Map;
-
+import java.net.HttpURLConnection;
 @RequiredArgsConstructor
 public class FreeCurrencyApiClient implements CurrencyApiClient {
     private final HttpClient httpClient;
@@ -37,9 +37,9 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
     public static ResponseStatusChecker defaultStatusChecker() {
         return new ResponseStatusChecker(
                 Map.of(
-                        401, AuthenticationFailedException::new,
-                        403, AuthenticationFailedException::new,
-                        404, CurrencyProviderResourceNotFoundException::new,
+                        HttpURLConnection.HTTP_UNAUTHORIZED, AuthenticationFailedException::new,
+                        HttpURLConnection.HTTP_FORBIDDEN, AuthenticationFailedException::new,
+                        HttpURLConnection.HTTP_NOT_FOUND, CurrencyProviderResourceNotFoundException::new,
                         422, InvalidProviderRequestException::new,
                         429, CurrencyProviderRateLimitException::new),
                 response -> new CurrencyProviderException("Currency provider request failed", response));
@@ -47,19 +47,19 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
 
     @Override
     public ExchangeRateResponse getMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies) {
-        return this.getParsedResponse(URI.create(BASE_URL + "/latest"),
+        return this.getParsedResponse(URI.create(BASE_URL.concat("/latest")),
                 Map.of("base_currency", fromCurrency.getCurrencyCode(), "currencies", joinCodes(toCurrencies)),
                 ExchangeRateResponse.class);
     }
 
     @Override
     public AvailableCurrenciesResponse getAvailableCurrencies() {
-        return this.getParsedResponse(URI.create(BASE_URL + "/currencies"), Map.of(), AvailableCurrenciesResponse.class);
+        return this.getParsedResponse(URI.create(BASE_URL.concat("/currencies")), Map.of(), AvailableCurrenciesResponse.class);
     }
 
     @Override
     public HistoricalExchangeRateResponse getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
-        return this.getParsedResponse(URI.create(BASE_URL + "/historical"),
+        return this.getParsedResponse(URI.create(BASE_URL.concat("/historical")),
                 Map.of("base_currency", fromCurrency.getCurrencyCode(), "currencies", joinCodes(toCurrencies), "date", date.toString()),
                 HistoricalExchangeRateResponse.class);
     }
