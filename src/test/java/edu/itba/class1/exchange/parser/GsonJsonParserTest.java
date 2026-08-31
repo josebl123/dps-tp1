@@ -3,8 +3,7 @@ package edu.itba.class1.exchange.parser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import edu.itba.class1.exchange.model.ExchangeRateResponse;
-import edu.itba.class1.exchange.client.error.InvalidProviderResponseException;
+import edu.itba.class1.exchange.client.currencyapi.response.ExchangeRateResponse;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +20,6 @@ class GsonJsonParserTest {
     @Test
     void rejectsMalformedJson() {
         assertThatThrownBy(() -> parser.parse("{malformed", ExchangeRateResponse.class))
-                .isInstanceOf(InvalidProviderResponseException.class);
+                .isInstanceOf(JsonParseException.class);
     }
 }

@@ -1,7 +1,6 @@
 package edu.itba.class1.exchange.parser;
 
 import com.google.gson.Gson;
-import edu.itba.class1.exchange.client.error.InvalidProviderResponseException;
 
 
 public class GsonJsonParser implements JsonParser {
@@ -13,7 +12,7 @@ public class GsonJsonParser implements JsonParser {
         try {
             return gson.fromJson(json, targetType);
         } catch (RuntimeException exception) {
-            throw new InvalidProviderResponseException(exception);
+            throw new JsonParseException(exception);
         }
     }
 }
