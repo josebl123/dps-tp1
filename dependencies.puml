@@ -25,14 +25,19 @@ package "DOMINIO  (model + service)" <<Domain>> {
         -currencyRateProvider: CurrencyRateProvider
         +convert(moneyAmount: MoneyAmount, to: Currency): Conversion
         +convertMultiple(moneyAmount: MoneyAmount, to: Collection): Collection
-        +historicalConvert(moneyAmount: MoneyAmount, to: Currency, date: LocalDate): Conversion
-        +historicalMultipleConvert(moneyAmount: MoneyAmount, to: Collection, date: LocalDate): Collection
+    }
+
+    class HistoricalCurrencyConverter {
+        -historicalCurrencyRateProvider: HistoricalCurrencyRateProvider
+        +convert(moneyAmount: MoneyAmount, to: Currency, date: LocalDate): Conversion
+        +convertMultiple(moneyAmount: MoneyAmount, to: Collection, date: LocalDate): Collection
     }
 
     class MoneyAmount {
         currency: Currency
         amount: BigDecimal
         +add(other: MoneyAmount): MoneyAmount
+        +convertWithRate(rate: CurrencyRate): MoneyAmount
         +multiply(rate: BigDecimal): BigDecimal
     }
 
@@ -51,6 +56,9 @@ package "DOMINIO  (model + service)" <<Domain>> {
     interface CurrencyRateProvider <<outbound port>> {
         +getCurrencyRate(from: Currency, to: Currency): CurrencyRate
         +getMultipleCurrencyRates(from: Currency, to: Collection): Collection
+    }
+
+    interface HistoricalCurrencyRateProvider <<outbound port>> {
         +getHistoricalCurrencyRate(...): CurrencyRate
         +getHistoricalMultipleCurrencyRates(...): Collection
     }
@@ -142,10 +150,14 @@ package "COMPOSICION" {
 CurrencyConverter --> CurrencyRateProvider : depende de abstraccion
 CurrencyConverter --> MoneyAmount
 CurrencyConverter --> Conversion
+HistoricalCurrencyConverter --> HistoricalCurrencyRateProvider : depende de abstraccion
+HistoricalCurrencyConverter --> MoneyAmount
+HistoricalCurrencyConverter --> Conversion
 Conversion --> MoneyAmount
 Conversion --> CurrencyRate
 
 CurrencyApiProvider ..|> CurrencyRateProvider
+CurrencyApiProvider ..|> HistoricalCurrencyRateProvider
 CurrencyApiProvider ..|> CurrencyCatalog
 CurrencyApiProvider --> CurrencyApiClient : depende de abstraccion
 CurrencyApiProvider --> ExchangeRateResponse : traduce DTO a dominio
@@ -180,6 +192,7 @@ GsonJsonParser ..> JsonParseException : crea ante JSON invalido
 GsonJsonParser --> Gson
 
 Main --> CurrencyConverter
+Main --> HistoricalCurrencyConverter
 Main --> CurrencyApiProvider
 Main --> FreeCurrencyApiClient
 Main --> UnirestHttpClient
@@ -190,6 +203,12 @@ note bottom of CurrencyConverter
   no de CurrencyApiProvider ni de FreeCurrencyApiClient.
   Sin interfaz propia: nadie necesita depender del converter
   sin conocer su implementacion.
+end note
+
+note bottom of HistoricalCurrencyConverter
+  ISP: las tasas actuales y las historicas son puertos separados.
+  Un consumidor de cotizaciones actuales no queda obligado a conocer
+  operaciones historicas que no usa.
 end note
 
 note bottom of Main

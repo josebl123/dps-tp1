@@ -3,6 +3,7 @@ package edu.itba.class1.exchange.client.currencyapi;
 import edu.itba.class1.exchange.model.CurrencyRate;
 import edu.itba.class1.exchange.service.CurrencyCatalog;
 import edu.itba.class1.exchange.service.CurrencyRateProvider;
+import edu.itba.class1.exchange.service.HistoricalCurrencyRateProvider;
 import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 import lombok.AllArgsConstructor;
 
@@ -12,7 +13,7 @@ import java.util.Currency;
 import java.util.List;
 
 @AllArgsConstructor
-public class CurrencyApiProvider implements CurrencyRateProvider, CurrencyCatalog {
+public class CurrencyApiProvider implements CurrencyRateProvider, HistoricalCurrencyRateProvider, CurrencyCatalog {
     private final CurrencyApiClient currencyApiClient;
 
     @Override

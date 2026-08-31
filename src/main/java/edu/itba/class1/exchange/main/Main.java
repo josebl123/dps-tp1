@@ -7,6 +7,7 @@ import edu.itba.class1.exchange.model.Conversion;
 import edu.itba.class1.exchange.model.MoneyAmount;
 import edu.itba.class1.exchange.parser.GsonJsonParser;
 import edu.itba.class1.exchange.service.CurrencyConverter;
+import edu.itba.class1.exchange.service.HistoricalCurrencyConverter;
 import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ void main() {
 	final var provider = new CurrencyApiProvider(
 			new FreeCurrencyApiClient(new UnirestHttpClient(), new GsonJsonParser()));
 	final var converter = new CurrencyConverter(provider);
+	final var historicalConverter = new HistoricalCurrencyConverter(provider);
 
 	final var usd = Currency.getInstance("USD");
 	final var eur = Currency.getInstance("EUR");
@@ -38,7 +40,7 @@ void main() {
 		converter.convertMultiple(amount, List.of(eur, jpy)).forEach(this::print);
 
 		System.out.printf("%nConversion de %s al %s:%n", amount, date);
-		converter.historicalMultipleConvert(amount, List.of(eur, jpy), date)
+		historicalConverter.convertMultiple(amount, List.of(eur, jpy), date)
 				.forEach(this::print);
 
 	} catch (final CurrencyProviderException | HttpTransportException | RateNotAvailableException e) {
