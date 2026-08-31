@@ -1,4 +1,4 @@
-package edu.itba.class1.exchange.client;
+package edu.itba.class1.exchange.client.currencyapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,6 +15,7 @@ import edu.itba.class1.exchange.client.error.CurrencyProviderException;
 import edu.itba.class1.exchange.client.error.CurrencyProviderRateLimitException;
 import edu.itba.class1.exchange.client.error.CurrencyProviderResourceNotFoundException;
 import edu.itba.class1.exchange.client.error.InvalidProviderRequestException;
+import edu.itba.class1.exchange.client.error.InvalidProviderResponseException;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -33,7 +34,14 @@ class FreeCurrencyApiClientTest {
 
     private final HttpClient httpClient = mock(HttpClient.class);
     private final FreeCurrencyApiClient client = new FreeCurrencyApiClient(
-            httpClient, new GsonJsonParser(), ResponseStatusChecker.forCurrencyProvider());
+            httpClient, new GsonJsonParser(), new ResponseStatusChecker(
+                    Map.of(
+                            401, AuthenticationFailedException::new,
+                            403, AuthenticationFailedException::new,
+                            404, CurrencyProviderResourceNotFoundException::new,
+                            422, InvalidProviderRequestException::new,
+                            429, CurrencyProviderRateLimitException::new),
+                    () -> new CurrencyProviderException("Currency provider request failed")));
 
     @BeforeEach
     void returnAnEmptyResponse() {
@@ -123,6 +131,14 @@ class FreeCurrencyApiClientTest {
 
         assertThatThrownBy(client::getAvailableCurrencies)
                 .isExactlyInstanceOf(CurrencyProviderException.class);
+    }
+
+    @Test
+    void translatesParserFailuresToProviderResponseFailures() {
+        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{malformed", 200));
+
+        assertThatThrownBy(client::getAvailableCurrencies)
+                .isExactlyInstanceOf(InvalidProviderResponseException.class);
     }
 
     private URI capturedUrl() {

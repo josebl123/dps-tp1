@@ -1,4 +1,4 @@
-package edu.itba.class1.exchange.client;
+package edu.itba.class1.exchange.client.currencyapi;
 
 import edu.itba.class1.exchange.client.error.AuthenticationFailedException;
 import edu.itba.class1.exchange.client.error.CurrencyProviderException;
@@ -13,7 +13,14 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ResponseStatusCheckerTest {
-    private final ResponseStatusChecker checker = ResponseStatusChecker.forCurrencyProvider();
+    private final ResponseStatusChecker checker = new ResponseStatusChecker(
+            Map.of(
+                    401, AuthenticationFailedException::new,
+                    403, AuthenticationFailedException::new,
+                    404, CurrencyProviderResourceNotFoundException::new,
+                    422, InvalidProviderRequestException::new,
+                    429, CurrencyProviderRateLimitException::new),
+            () -> new CurrencyProviderException("Currency provider request failed"));
 
     @Test
     void acceptsAnySuccessfulStatus() {

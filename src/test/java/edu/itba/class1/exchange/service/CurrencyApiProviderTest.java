@@ -7,11 +7,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import edu.itba.class1.exchange.parser.GsonJsonParser;
-import edu.itba.class1.exchange.client.CurrencyApiClient;
+import edu.itba.class1.exchange.client.currencyapi.CurrencyApiClient;
+import edu.itba.class1.exchange.client.currencyapi.CurrencyApiProvider;
 import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 import edu.itba.class1.exchange.model.CurrencyRate;
-import edu.itba.class1.exchange.model.AvailableCurrenciesResponse;
-import edu.itba.class1.exchange.model.ExchangeRateResponse;
+import edu.itba.class1.exchange.client.currencyapi.response.AvailableCurrenciesResponse;
+import edu.itba.class1.exchange.client.currencyapi.response.ExchangeRateResponse;
 
 import java.math.BigDecimal;
 import java.time.Instant;
