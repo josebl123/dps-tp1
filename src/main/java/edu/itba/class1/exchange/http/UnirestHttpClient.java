@@ -3,6 +3,7 @@ package edu.itba.class1.exchange.http;
 
 
 import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 
 import java.net.URI;
@@ -15,8 +16,8 @@ public class UnirestHttpClient implements HttpClient {
 		try {
 			final var response = Unirest.get(url.toString()).queryString(queryParams).headers(headers).asJson();
 			return new HttpResponse(response.getBody().toString(), response.getStatus());
-		} catch (final Exception e) {
-			throw new HttpTransportException("Could not reach currency provider", e);
-		}
+		}  catch (final UnirestException e) {
+		throw new HttpTransportException("Could not reach currency provider", e);
+	}
 	}
 }

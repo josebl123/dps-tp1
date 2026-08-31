@@ -9,10 +9,15 @@ public class GsonJsonParser implements JsonParser {
 
     @Override
     public <T> T parse(String json, Class<T> targetType) {
+        final T parsed;
         try {
-            return gson.fromJson(json, targetType);
+            parsed = gson.fromJson(json, targetType);
         } catch (JsonSyntaxException exception) {
             throw new JsonParseException(exception);
         }
+        if (parsed == null) {
+            throw new JsonParseException(new NullPointerException("Parsed object is null"));
+        }
+        return parsed;
     }
 }
