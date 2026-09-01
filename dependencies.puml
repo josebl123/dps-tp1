@@ -1,5 +1,5 @@
 @startuml
-title Currency Converter - Arquitectura e inversion de dependencias
+title Currency Converter - Dominio, puertos y detalles
 
 left to right direction
 skinparam packageStyle rectangle
@@ -21,6 +21,25 @@ endlegend
 
 package "DOMINIO  (model + service)" <<Domain>> {
 
+    class MoneyAmount <<value object>> {
+        currency: Currency
+        amount: BigDecimal
+        +convertWithRate(rate: CurrencyRate): MoneyAmount
+        +add(other: MoneyAmount): MoneyAmount
+    }
+
+    class CurrencyRate <<value object>> {
+        fromCurrency: Currency
+        toCurrency: Currency
+        rate: BigDecimal
+        timestamp: Instant
+    }
+
+    class Conversion <<value object>> {
+        converted: MoneyAmount
+        rateUsed: CurrencyRate
+    }
+
     class CurrencyConverter {
         -currencyRateProvider: CurrencyRateProvider
         +convert(moneyAmount: MoneyAmount, to: Currency): Conversion
@@ -33,71 +52,44 @@ package "DOMINIO  (model + service)" <<Domain>> {
         +convertMultiple(moneyAmount: MoneyAmount, to: Collection, date: LocalDate): Collection
     }
 
-    class MoneyAmount {
-        currency: Currency
-        amount: BigDecimal
-        +add(other: MoneyAmount): MoneyAmount
-        +convertWithRate(rate: CurrencyRate): MoneyAmount
-        +multiply(rate: BigDecimal): BigDecimal
-    }
-
-    class CurrencyRate {
-        fromCurrency: Currency
-        toCurrency: Currency
-        rate: BigDecimal
-        timestamp: Instant
-    }
-
-    class Conversion {
-        converted: MoneyAmount
-        rateUsed: CurrencyRate
-    }
-
-    interface CurrencyRateProvider <<outbound port>> {
+    interface CurrencyRateProvider <<puerto>> {
         +getCurrencyRate(from: Currency, to: Currency): CurrencyRate
         +getMultipleCurrencyRates(from: Currency, to: Collection): Collection
     }
 
-    interface HistoricalCurrencyRateProvider <<outbound port>> {
-        +getHistoricalCurrencyRate(...): CurrencyRate
-        +getHistoricalMultipleCurrencyRates(...): Collection
+    interface HistoricalCurrencyRateProvider <<puerto>> {
+        +getHistoricalCurrencyRate(from, to, date: LocalDate): CurrencyRate
+        +getHistoricalMultipleCurrencyRates(from, to, date: LocalDate): Collection
     }
 
-    interface CurrencyCatalog <<outbound port>> {
+    interface CurrencyCatalog <<puerto>> {
         +getAvailableCurrencies(): Collection
     }
 
     class RateNotAvailableException <<domain exception>>
 }
 
-package "ADAPTADOR DE APLICACION  (client.currencyapi)" {
-    class CurrencyApiProvider {
-        -currencyApiClient: CurrencyApiClient
-        +getCurrencyRate(...): CurrencyRate
-        +getMultipleCurrencyRates(...): Collection
-        +getHistoricalCurrencyRate(...): CurrencyRate
-        +getHistoricalMultipleCurrencyRates(...): Collection
-        +getAvailableCurrencies(): Collection
-    }
-
-    interface CurrencyApiClient <<integration port>> {
-        +getRates(...): Collection<CurrencyRate>
-        +getHistoricalRates(...): Collection<CurrencyRate>
-        +getAvailableCurrencies(): Collection<Currency>
-    }
-
+package "ADAPTADOR  (client.currencyapi.freecurrencyapi)" {
     class FreeCurrencyApiClient {
         -httpClient: HttpClient
         -jsonParser: JsonParser
         -responseStatusChecker: ResponseStatusChecker
+        -responseMapper: FreeCurrencyResponseMapper
+        -apiKey: String
         +{static} defaultStatusChecker(): ResponseStatusChecker
+    }
+
+    class FreeCurrencyResponseMapper <<anti-corruption layer>> {
+        +toRates(from, to, response): Collection<CurrencyRate>
+        +toHistoricalRates(from, to, date, response): Collection<CurrencyRate>
+        +toCurrencies(response): Collection<Currency>
     }
 }
 
-package "DTOs DE FREECURRENCYAPI  (client.currencyapi.freecurrencyapi.response)" {
-    class ExchangeRateResponse <<external DTO>>
-    class HistoricalExchangeRateResponse <<external DTO>>
-    class AvailableCurrenciesResponse <<external DTO>>
+package "DTOs DE LA API  (...freecurrencyapi.response)" {
+    class ExchangeRateResponse <<DTO>>
+    class HistoricalExchangeRateResponse <<DTO>>
+    class AvailableCurrenciesResponse <<DTO>>
 }
 
 package "ERRORES DE INTEGRACION  (client.error)" {
@@ -120,6 +112,12 @@ package "HTTP  (http)" {
     class HttpResponse {
         body: String
         statusCode: int
+        +isSuccessful(): boolean
+    }
+    enum HttpStatus {
+        OK, UNAUTHORIZED, FORBIDDEN
+        NOT_FOUND, UNPROCESSABLE_CONTENT
+        TOO_MANY_REQUESTS
     }
     class ResponseStatusChecker {
         -errors: Map<Integer, Function>
@@ -146,28 +144,30 @@ package "COMPOSICION" {
     class Main
 }
 
-CurrencyConverter --> CurrencyRateProvider : depende de abstraccion
-CurrencyConverter --> MoneyAmount
+CurrencyConverter --> CurrencyRateProvider : depende de la abstraccion
+HistoricalCurrencyConverter --> HistoricalCurrencyRateProvider : depende de la abstraccion
 CurrencyConverter --> Conversion
-HistoricalCurrencyConverter --> HistoricalCurrencyRateProvider : depende de abstraccion
-HistoricalCurrencyConverter --> MoneyAmount
 HistoricalCurrencyConverter --> Conversion
 Conversion --> MoneyAmount
 Conversion --> CurrencyRate
+MoneyAmount ..> CurrencyRate : convertWithRate
 
-CurrencyApiProvider ..|> CurrencyRateProvider
-CurrencyApiProvider ..|> HistoricalCurrencyRateProvider
-CurrencyApiProvider ..|> CurrencyCatalog
-CurrencyApiProvider --> CurrencyApiClient : depende de abstraccion
-
-FreeCurrencyApiClient ..|> CurrencyApiClient
-FreeCurrencyApiClient --> HttpClient : depende de abstraccion
-FreeCurrencyApiClient --> JsonParser : depende de abstraccion
+FreeCurrencyApiClient ..|> CurrencyRateProvider
+FreeCurrencyApiClient ..|> HistoricalCurrencyRateProvider
+FreeCurrencyApiClient ..|> CurrencyCatalog
+FreeCurrencyApiClient --> HttpClient : depende de la abstraccion
+FreeCurrencyApiClient --> JsonParser : depende de la abstraccion
 FreeCurrencyApiClient --> ResponseStatusChecker
 FreeCurrencyApiClient --> FreeCurrencyResponseMapper
-FreeCurrencyResponseMapper --> ExchangeRateResponse
+FreeCurrencyApiClient --> ExchangeRateResponse
+FreeCurrencyApiClient --> HistoricalExchangeRateResponse
+FreeCurrencyApiClient --> AvailableCurrenciesResponse
+FreeCurrencyApiClient ..> InvalidProviderResponseException : envuelve fallas de parseo
+
+FreeCurrencyResponseMapper --> ExchangeRateResponse : traduce DTO a dominio
 FreeCurrencyResponseMapper --> HistoricalExchangeRateResponse
 FreeCurrencyResponseMapper --> AvailableCurrenciesResponse
+FreeCurrencyResponseMapper --> CurrencyRate : produce
 FreeCurrencyResponseMapper ..> RateNotAvailableException : crea ante tasa ausente
 
 CurrencyProviderException <|-- AuthenticationFailedException
@@ -178,6 +178,7 @@ CurrencyProviderException <|-- InvalidProviderResponseException
 CurrencyProviderException --> HttpResponse : conserva status y body
 
 ResponseStatusChecker --> HttpResponse
+ResponseStatusChecker --> HttpStatus
 ResponseStatusChecker ..> CurrencyProviderException : crea segun status
 
 UnirestHttpClient ..|> HttpClient
@@ -190,39 +191,35 @@ GsonJsonParser --> Gson
 
 Main --> CurrencyConverter
 Main --> HistoricalCurrencyConverter
-Main --> CurrencyApiProvider
 Main --> FreeCurrencyApiClient
 Main --> UnirestHttpClient
 Main --> GsonJsonParser
 
 note bottom of CurrencyConverter
-  Inversion correcta: el dominio depende de CurrencyRateProvider,
-  no de CurrencyApiProvider ni de FreeCurrencyApiClient.
-  Sin interfaz propia: nadie necesita depender del converter
-  sin conocer su implementacion.
+  Inversion de dependencias: el dominio depende de los puertos,
+  nunca de FreeCurrencyApiClient, Unirest ni Gson.
 end note
 
-note bottom of HistoricalCurrencyConverter
-  ISP: las tasas actuales y las historicas son puertos separados.
-  Un consumidor de cotizaciones actuales no queda obligado a conocer
-  operaciones historicas que no usa.
+note bottom of FreeCurrencyResponseMapper
+  Unico punto donde el modelo de FreeCurrencyAPI se traduce
+  al dominio. Los DTOs no cruzan hacia service/ ni model/.
 end note
 
 note bottom of Main
-  Dependencias concretas intencionales: Main es el composition root.
-  Es el unico punto que captura las excepciones y las notifica.
+  Dependencias concretas intencionales: es el composition root
+  y el unico lugar que resuelve la API key.
 end note
 
 note right of ResponseStatusChecker
-  Usa un Map de status a factories de excepcion.
-  Vive en http: no parsea JSON ni conoce el dominio.
+  Map de status a factories de excepcion.
+  Agregar un status es una entrada mas, sin editar el metodo.
 end note
 
 note as N1
   Las tres jerarquias de excepcion no comparten raiz:
   CurrencyProviderException, HttpTransportException
   y RateNotAvailableException extienden RuntimeException
-  por separado, asi que Main captura las tres.
+  por separado, y Main captura las tres.
 end note
 
 N1 .. CurrencyProviderException

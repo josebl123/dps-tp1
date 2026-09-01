@@ -43,7 +43,11 @@ class MoneyAmountTest {
 
     @Test
     void rejectsNullCurrencyAndAmount() {
-        assertThatThrownBy(() -> new MoneyAmount(null, BigDecimal.ONE)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new MoneyAmount(USD, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new MoneyAmount(null, BigDecimal.ONE))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("Currency cannot be null");
+        assertThatThrownBy(() -> new MoneyAmount(USD, null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("Amount cannot be null");
     }
 }

@@ -13,7 +13,7 @@ public class GsonJsonParser implements JsonParser {
     public <T> T parse(String json, Class<T> targetType) {
         final Optional<T> parsed;
         try {
-            parsed = Optional.of(gson.fromJson(json, targetType));
+            parsed = Optional.ofNullable(gson.fromJson(json, targetType));
         } catch (JsonSyntaxException exception) {
             throw new JsonParseException(exception);
         }
