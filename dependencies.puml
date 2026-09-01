@@ -164,10 +164,11 @@ FreeCurrencyApiClient ..|> CurrencyApiClient
 FreeCurrencyApiClient --> HttpClient : depende de abstraccion
 FreeCurrencyApiClient --> JsonParser : depende de abstraccion
 FreeCurrencyApiClient --> ResponseStatusChecker
-FreeCurrencyApiClient --> ExchangeRateResponse
-FreeCurrencyApiClient --> HistoricalExchangeRateResponse
-FreeCurrencyApiClient --> AvailableCurrenciesResponse
-FreeCurrencyApiClient ..> RateNotAvailableException : crea ante tasa ausente
+FreeCurrencyApiClient --> FreeCurrencyResponseMapper
+FreeCurrencyResponseMapper --> ExchangeRateResponse
+FreeCurrencyResponseMapper --> HistoricalExchangeRateResponse
+FreeCurrencyResponseMapper --> AvailableCurrenciesResponse
+FreeCurrencyResponseMapper ..> RateNotAvailableException : crea ante tasa ausente
 
 CurrencyProviderException <|-- AuthenticationFailedException
 CurrencyProviderException <|-- CurrencyProviderRateLimitException

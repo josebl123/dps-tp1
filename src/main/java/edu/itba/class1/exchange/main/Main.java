@@ -1,5 +1,5 @@
 import edu.itba.class1.exchange.client.currencyapi.CurrencyApiProvider;
-import edu.itba.class1.exchange.client.currencyapi.FreeCurrencyApiClient;
+import edu.itba.class1.exchange.client.currencyapi.freecurrencyapi.FreeCurrencyApiClient;
 import edu.itba.class1.exchange.client.error.CurrencyProviderException;
 import edu.itba.class1.exchange.http.HttpTransportException;
 import edu.itba.class1.exchange.http.UnirestHttpClient;
