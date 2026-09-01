@@ -4,16 +4,13 @@ package edu.itba.class1.exchange.model;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
+import java.util.Objects;
 
 public record MoneyAmount(Currency currency, BigDecimal amount) {
 
 	public MoneyAmount {
-		if (currency == null) {
-			throw new IllegalArgumentException("Currency cannot be null");
-		}
-		if (amount == null) {
-			throw new IllegalArgumentException("Amount cannot be null");
-		}
+		Objects.requireNonNull(currency, "Currency cannot be null");
+		Objects.requireNonNull(amount, "Amount cannot be null");
 		amount = amount.setScale(currency.getDefaultFractionDigits(), RoundingMode.HALF_EVEN);
 	}
 
