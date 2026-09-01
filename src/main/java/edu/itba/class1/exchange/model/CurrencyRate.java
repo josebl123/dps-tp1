@@ -5,11 +5,16 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Currency;
+import java.util.Objects;
 
 public record CurrencyRate(Currency fromCurrency, Currency toCurrency, BigDecimal rate, Instant timestamp) {
 
     public CurrencyRate {
-        if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
+        Objects.requireNonNull(fromCurrency, "fromCurrency");
+        Objects.requireNonNull(toCurrency, "toCurrency");
+        Objects.requireNonNull(rate, "rate");
+        Objects.requireNonNull(timestamp, "timestamp");
+        if (rate.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Rate must be greater than zero, got: " + rate);
         }
     }
