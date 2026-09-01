@@ -1,8 +1,8 @@
 package edu.itba.class1.exchange.client.currencyapi;
 
-import edu.itba.class1.exchange.client.currencyapi.response.AvailableCurrenciesResponse;
-import edu.itba.class1.exchange.client.currencyapi.response.ExchangeRateResponse;
-import edu.itba.class1.exchange.client.currencyapi.response.HistoricalExchangeRateResponse;
+import edu.itba.class1.exchange.client.currencyapi.freecurrencyapi.response.AvailableCurrenciesResponse;
+import edu.itba.class1.exchange.client.currencyapi.freecurrencyapi.response.ExchangeRateResponse;
+import edu.itba.class1.exchange.client.currencyapi.freecurrencyapi.response.HistoricalExchangeRateResponse;
 import edu.itba.class1.exchange.client.error.AuthenticationFailedException;
 import edu.itba.class1.exchange.client.error.CurrencyProviderException;
 import edu.itba.class1.exchange.client.error.CurrencyProviderRateLimitException;
@@ -12,8 +12,10 @@ import edu.itba.class1.exchange.client.error.InvalidProviderResponseException;
 import edu.itba.class1.exchange.http.HttpClient;
 import edu.itba.class1.exchange.http.HttpStatus;
 import edu.itba.class1.exchange.http.ResponseStatusChecker;
+import edu.itba.class1.exchange.model.CurrencyRate;
 import edu.itba.class1.exchange.parser.JsonParser;
 import edu.itba.class1.exchange.parser.JsonParseException;
+import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 import lombok.RequiredArgsConstructor;
 
 import java.net.URI;
@@ -47,22 +49,31 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
     }
 
     @Override
-    public ExchangeRateResponse getMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies) {
-        return this.getParsedResponse(URI.create(BASE_URL.concat("/latest")),
+    public Collection<CurrencyRate> getRates(Currency fromCurrency, Collection<Currency> toCurrencies) {
+        final var response = this.getParsedResponse(URI.create(BASE_URL.concat("/latest")),
                 Map.of("base_currency", fromCurrency.getCurrencyCode(), "currencies", joinCodes(toCurrencies)),
                 ExchangeRateResponse.class);
+        return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency,
+                response.findExchange(toCurrency.getCurrencyCode())
+                        .orElseThrow(() -> new RateNotAvailableException(fromCurrency, toCurrency))))
+                .toList();
     }
 
     @Override
-    public AvailableCurrenciesResponse getAvailableCurrencies() {
-        return this.getParsedResponse(URI.create(BASE_URL.concat("/currencies")), Map.of(), AvailableCurrenciesResponse.class);
+    public Collection<Currency> getAvailableCurrencies() {
+        return this.getParsedResponse(URI.create(BASE_URL.concat("/currencies")), Map.of(), AvailableCurrenciesResponse.class)
+                .getCurrencies();
     }
 
     @Override
-    public HistoricalExchangeRateResponse getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
-        return this.getParsedResponse(URI.create(BASE_URL.concat("/historical")),
+    public Collection<CurrencyRate> getHistoricalRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
+        final var response = this.getParsedResponse(URI.create(BASE_URL.concat("/historical")),
                 Map.of("base_currency", fromCurrency.getCurrencyCode(), "currencies", joinCodes(toCurrencies), "date", date.toString()),
                 HistoricalExchangeRateResponse.class);
+        return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency,
+                response.findExchange(date, toCurrency.getCurrencyCode())
+                        .orElseThrow(() -> new RateNotAvailableException(fromCurrency, toCurrency, date)), date))
+                .toList();
     }
 
     private static String joinCodes(Collection<Currency> currencies) {

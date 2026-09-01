@@ -81,10 +81,9 @@ package "ADAPTADOR DE APLICACION  (client.currencyapi)" {
     }
 
     interface CurrencyApiClient <<integration port>> {
-        +getCurrencyRate(...): ExchangeRateResponse
-        +getMultipleCurrencyRates(...): ExchangeRateResponse
-        +getHistoricalMultipleCurrencyRates(...): HistoricalExchangeRateResponse
-        +getAvailableCurrencies(): AvailableCurrenciesResponse
+        +getRates(...): Collection<CurrencyRate>
+        +getHistoricalRates(...): Collection<CurrencyRate>
+        +getAvailableCurrencies(): Collection<Currency>
     }
 
     class FreeCurrencyApiClient {
@@ -95,7 +94,7 @@ package "ADAPTADOR DE APLICACION  (client.currencyapi)" {
     }
 }
 
-package "DTOs DE LA API  (client.currencyapi.response)" {
+package "DTOs DE FREECURRENCYAPI  (client.currencyapi.freecurrencyapi.response)" {
     class ExchangeRateResponse <<external DTO>>
     class HistoricalExchangeRateResponse <<external DTO>>
     class AvailableCurrenciesResponse <<external DTO>>
@@ -160,10 +159,6 @@ CurrencyApiProvider ..|> CurrencyRateProvider
 CurrencyApiProvider ..|> HistoricalCurrencyRateProvider
 CurrencyApiProvider ..|> CurrencyCatalog
 CurrencyApiProvider --> CurrencyApiClient : depende de abstraccion
-CurrencyApiProvider --> ExchangeRateResponse : traduce DTO a dominio
-CurrencyApiProvider --> HistoricalExchangeRateResponse
-CurrencyApiProvider --> AvailableCurrenciesResponse
-CurrencyApiProvider ..> RateNotAvailableException : crea ante tasa ausente
 
 FreeCurrencyApiClient ..|> CurrencyApiClient
 FreeCurrencyApiClient --> HttpClient : depende de abstraccion
@@ -172,6 +167,7 @@ FreeCurrencyApiClient --> ResponseStatusChecker
 FreeCurrencyApiClient --> ExchangeRateResponse
 FreeCurrencyApiClient --> HistoricalExchangeRateResponse
 FreeCurrencyApiClient --> AvailableCurrenciesResponse
+FreeCurrencyApiClient ..> RateNotAvailableException : crea ante tasa ausente
 
 CurrencyProviderException <|-- AuthenticationFailedException
 CurrencyProviderException <|-- CurrencyProviderRateLimitException

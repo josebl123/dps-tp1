@@ -3,7 +3,7 @@ package edu.itba.class1.exchange.parser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import edu.itba.class1.exchange.client.currencyapi.response.ExchangeRateResponse;
+import edu.itba.class1.exchange.client.currencyapi.freecurrencyapi.response.ExchangeRateResponse;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 

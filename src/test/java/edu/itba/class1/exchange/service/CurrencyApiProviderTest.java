@@ -1,19 +1,13 @@
 package edu.itba.class1.exchange.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import edu.itba.class1.exchange.parser.GsonJsonParser;
 import edu.itba.class1.exchange.client.currencyapi.CurrencyApiClient;
 import edu.itba.class1.exchange.client.currencyapi.CurrencyApiProvider;
-import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 import edu.itba.class1.exchange.model.CurrencyRate;
-import edu.itba.class1.exchange.client.currencyapi.response.AvailableCurrenciesResponse;
-import edu.itba.class1.exchange.client.currencyapi.response.ExchangeRateResponse;
-import edu.itba.class1.exchange.client.currencyapi.response.HistoricalExchangeRateResponse;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,106 +26,67 @@ class CurrencyApiProviderTest {
     private final CurrencyApiProvider provider = new CurrencyApiProvider(client);
 
     @Test
-    void mapsMultipleRatesFromApiResponse() {
-        when(client.getMultipleCurrencyRates(USD, List.of(EUR, JPY)))
-                .thenReturn(rates("{\"data\":{\"EUR\":0.92,\"JPY\":145.5}}"));
+    void delegatesMultipleRatesToClient() {
+        var expected = List.of(rate(USD, EUR, "0.92"), rate(USD, JPY, "145.5"));
+        when(client.getRates(USD, List.of(EUR, JPY))).thenReturn(expected);
 
         var rates = provider.getMultipleCurrencyRates(USD, List.of(EUR, JPY));
 
-        assertThat(rates).extracting(CurrencyRate::fromCurrency).containsExactly(USD, USD);
-        assertThat(rates).extracting(CurrencyRate::toCurrency).containsExactly(EUR, JPY);
-        assertThat(rates).extracting(CurrencyRate::rate)
-                .containsExactly(new BigDecimal("0.92"), new BigDecimal("145.5"));
+        assertThat(rates).containsExactlyElementsOf(expected);
     }
 
     @Test
     void getsOneRateUsingTheMultipleRatesContract() {
-        when(client.getMultipleCurrencyRates(USD, List.of(EUR)))
-                .thenReturn(rates("{\"data\":{\"EUR\":0.92}}"));
+        when(client.getRates(USD, List.of(EUR))).thenReturn(List.of(rate(USD, EUR, "0.92")));
 
         var rate = provider.getCurrencyRate(USD, EUR);
 
         assertThat(rate.toCurrency()).isEqualTo(EUR);
         assertThat(rate.rate()).isEqualByComparingTo("0.92");
-        verify(client).getMultipleCurrencyRates(USD, List.of(EUR));
+        verify(client).getRates(USD, List.of(EUR));
     }
 
     @Test
     void returnsAnEmptyCollectionWhenNoCurrenciesAreRequested() {
-        when(client.getMultipleCurrencyRates(USD, List.of())).thenReturn(rates("{\"data\":{}}"));
+        when(client.getRates(USD, List.of())).thenReturn(List.of());
 
         assertThat(provider.getMultipleCurrencyRates(USD, List.of())).isEmpty();
     }
 
     @Test
-    void reportsWhenTheApiDoesNotReturnARequestedRate() {
-        when(client.getMultipleCurrencyRates(USD, List.of(EUR)))
-                .thenReturn(rates("{\"data\":{}}"));
-
-        assertThatThrownBy(() -> provider.getMultipleCurrencyRates(USD, List.of(EUR)))
-                .isExactlyInstanceOf(RateNotAvailableException.class)
-                .hasMessage("No exchange rate available from USD to EUR");
-    }
-
-    @Test
-    void mapsHistoricalRates() {
+    void delegatesHistoricalRatesToClient() {
         var date = LocalDate.of(2024, 11, 20);
-        when(client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date))
-                .thenReturn(historicalRates("{\"data\":{\"2024-11-20\":{\"EUR\":0.91}}}"));
+        var expected = List.of(new CurrencyRate(USD, EUR, new BigDecimal("0.91"), date));
+        when(client.getHistoricalRates(USD, List.of(EUR), date)).thenReturn(expected);
 
         var rates = provider.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date);
 
-        assertThat(rates).singleElement().satisfies(rate -> {
-            assertThat(rate.fromCurrency()).isEqualTo(USD);
-            assertThat(rate.toCurrency()).isEqualTo(EUR);
-            assertThat(rate.rate()).isEqualByComparingTo("0.91");
-            assertThat(rate.timestamp()).isEqualTo(Instant.parse("2024-11-20T00:00:00Z"));
-        });
+        assertThat(rates).containsExactlyElementsOf(expected);
     }
 
     @Test
     void getsOneHistoricalRateUsingTheMultipleRatesContract() {
         var date = LocalDate.of(2024, 11, 20);
-        when(client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date))
-                .thenReturn(historicalRates("{\"data\":{\"2024-11-20\":{\"EUR\":0.91}}}"));
+        when(client.getHistoricalRates(USD, List.of(EUR), date))
+                .thenReturn(List.of(new CurrencyRate(USD, EUR, new BigDecimal("0.91"), date)));
 
         var rate = provider.getHistoricalCurrencyRate(USD, EUR, date);
 
         assertThat(rate.toCurrency()).isEqualTo(EUR);
         assertThat(rate.rate()).isEqualByComparingTo("0.91");
         assertThat(rate.timestamp()).isEqualTo(Instant.parse("2024-11-20T00:00:00Z"));
-        verify(client).getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date);
-    }
-
-    @Test
-    void reportsWhenHistoricalApiDoesNotReturnARequestedRate() {
-        var date = LocalDate.of(2024, 11, 20);
-        when(client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date))
-                .thenReturn(historicalRates("{\"data\":{\"2024-11-20\":{}}}"));
-
-        assertThatThrownBy(() -> provider.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date))
-                .isExactlyInstanceOf(RateNotAvailableException.class)
-                .hasMessage("No exchange rate available from USD to EUR for 2024-11-20");
+        verify(client).getHistoricalRates(USD, List.of(EUR), date);
     }
 
     @Test
     void mapsAvailableCurrencies() {
-        when(client.getAvailableCurrencies())
-                .thenReturn(currencies("{\"data\":{\"USD\":{\"code\":\"USD\"},\"EUR\":{\"code\":\"EUR\"}}}"));
+        when(client.getAvailableCurrencies()).thenReturn(List.of(USD, EUR));
 
         assertThat(provider.getAvailableCurrencies())
                 .containsExactly(Currency.getInstance("USD"), Currency.getInstance("EUR"));
     }
 
-    private static ExchangeRateResponse rates(String body) {
-        return new GsonJsonParser().parse(body, ExchangeRateResponse.class);
-    }
-
-    private static HistoricalExchangeRateResponse historicalRates(String body) {
-        return new GsonJsonParser().parse(body, HistoricalExchangeRateResponse.class);
-    }
-
-    private static AvailableCurrenciesResponse currencies(String body) {
-        return new GsonJsonParser().parse(body, AvailableCurrenciesResponse.class);
+    private static CurrencyRate rate(Currency from, Currency to, String value) {
+        return new CurrencyRate(from, to, new BigDecimal(value));
     }
 }

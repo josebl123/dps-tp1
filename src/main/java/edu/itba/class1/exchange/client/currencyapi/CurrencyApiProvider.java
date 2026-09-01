@@ -4,7 +4,6 @@ import edu.itba.class1.exchange.model.CurrencyRate;
 import edu.itba.class1.exchange.service.CurrencyCatalog;
 import edu.itba.class1.exchange.service.CurrencyRateProvider;
 import edu.itba.class1.exchange.service.HistoricalCurrencyRateProvider;
-import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDate;
@@ -23,11 +22,7 @@ public class CurrencyApiProvider implements CurrencyRateProvider, HistoricalCurr
 
     @Override
     public Collection<CurrencyRate> getMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies) {
-        final var exchangeRateResponse = this.currencyApiClient.getMultipleCurrencyRates(fromCurrency, toCurrencies);
-        return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency,
-                exchangeRateResponse.findExchange(toCurrency.getCurrencyCode())
-                        .orElseThrow(() -> new RateNotAvailableException(fromCurrency, toCurrency))))
-                .toList();
+        return this.currencyApiClient.getRates(fromCurrency, toCurrencies);
     }
 
     @Override
@@ -37,17 +32,11 @@ public class CurrencyApiProvider implements CurrencyRateProvider, HistoricalCurr
 
     @Override
     public Collection<CurrencyRate> getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
-        final var exchangeRateResponse = this.currencyApiClient.getHistoricalMultipleCurrencyRates(fromCurrency, toCurrencies, date);
-        return toCurrencies.stream().map(toCurrency -> new CurrencyRate(fromCurrency, toCurrency,
-                exchangeRateResponse.findExchange(date, toCurrency.getCurrencyCode())
-                        .orElseThrow(() -> new RateNotAvailableException(fromCurrency, toCurrency, date)), date))
-                .toList();
-
+        return this.currencyApiClient.getHistoricalRates(fromCurrency, toCurrencies, date);
     }
 
     @Override
     public Collection<Currency> getAvailableCurrencies() {
-        final var availableCurrenciesResponse = this.currencyApiClient.getAvailableCurrencies();
-        return availableCurrenciesResponse.getCurrencies();
+        return this.currencyApiClient.getAvailableCurrencies();
     }
 }

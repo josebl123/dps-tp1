@@ -16,8 +16,11 @@ import edu.itba.class1.exchange.client.error.CurrencyProviderRateLimitException;
 import edu.itba.class1.exchange.client.error.CurrencyProviderResourceNotFoundException;
 import edu.itba.class1.exchange.client.error.InvalidProviderRequestException;
 import edu.itba.class1.exchange.client.error.InvalidProviderResponseException;
+import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 
 import java.net.URI;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
@@ -37,12 +40,15 @@ class FreeCurrencyApiClientTest {
 
     @BeforeEach
     void returnAnEmptyResponse() {
-        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{}", 200));
+        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{\"data\":{}}", 200));
     }
 
     @Test
     void buildsLatestRateRequest() {
-        client.getMultipleCurrencyRates(USD, List.of(EUR, JPY));
+        when(httpClient.get(any(), any(), any()))
+                .thenReturn(new HttpResponse("{\"data\":{\"EUR\":0.92,\"JPY\":145.5}}", 200));
+
+        client.getRates(USD, List.of(EUR, JPY));
 
         assertThat(capturedUrl()).isEqualTo(URI.create("https://api.freecurrencyapi.com/v1/latest"));
         assertThat(capturedQuery()).containsEntry("base_currency", "USD")
@@ -51,7 +57,10 @@ class FreeCurrencyApiClientTest {
 
     @Test
     void buildsHistoricalRateRequest() {
-        client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), LocalDate.of(2024, 11, 20));
+        when(httpClient.get(any(), any(), any()))
+                .thenReturn(new HttpResponse("{\"data\":{\"2024-11-20\":{\"EUR\":0.91}}}", 200));
+
+        client.getHistoricalRates(USD, List.of(EUR), LocalDate.of(2024, 11, 20));
 
         assertThat(capturedUrl()).isEqualTo(URI.create("https://api.freecurrencyapi.com/v1/historical"));
         assertThat(capturedQuery()).containsEntry("base_currency", "USD")
@@ -72,9 +81,13 @@ class FreeCurrencyApiClientTest {
         when(httpClient.get(any(), any(), any()))
                 .thenReturn(new HttpResponse("{\"data\":{\"EUR\":0.918456}}", 200));
 
-        var response = client.getMultipleCurrencyRates(USD, List.of(EUR));
+        var response = client.getRates(USD, List.of(EUR));
 
-        assertThat(response.findExchange("EUR")).isPresent();
+        assertThat(response).singleElement().satisfies(rate -> {
+            assertThat(rate.fromCurrency()).isEqualTo(USD);
+            assertThat(rate.toCurrency()).isEqualTo(EUR);
+            assertThat(rate.rate()).isEqualByComparingTo(new BigDecimal("0.918456"));
+        });
     }
 
     @Test
@@ -83,16 +96,39 @@ class FreeCurrencyApiClientTest {
         when(httpClient.get(any(), any(), any()))
                 .thenReturn(new HttpResponse("{\"data\":{\"2024-11-20\":{\"EUR\":0.879908}}}", 200));
 
-        var response = client.getHistoricalMultipleCurrencyRates(USD, List.of(EUR), date);
+        var response = client.getHistoricalRates(USD, List.of(EUR), date);
 
-        assertThat(response.findExchange(date, "EUR")).isPresent();
+        assertThat(response).singleElement().satisfies(rate -> {
+            assertThat(rate.rate()).isEqualByComparingTo(new BigDecimal("0.879908"));
+            assertThat(rate.timestamp()).isEqualTo(Instant.parse("2024-11-20T00:00:00Z"));
+        });
+    }
+
+    @Test
+    void reportsWhenTheLatestResponseDoesNotContainARequestedRate() {
+        when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{\"data\":{}}", 200));
+
+        assertThatThrownBy(() -> client.getRates(USD, List.of(EUR)))
+                .isExactlyInstanceOf(RateNotAvailableException.class)
+                .hasMessage("No exchange rate available from USD to EUR");
+    }
+
+    @Test
+    void reportsWhenTheHistoricalResponseDoesNotContainARequestedRate() {
+        var date = LocalDate.of(2024, 11, 20);
+        when(httpClient.get(any(), any(), any()))
+                .thenReturn(new HttpResponse("{\"data\":{\"2024-11-20\":{}}}", 200));
+
+        assertThatThrownBy(() -> client.getHistoricalRates(USD, List.of(EUR), date))
+                .isExactlyInstanceOf(RateNotAvailableException.class)
+                .hasMessage("No exchange rate available from USD to EUR for 2024-11-20");
     }
 
     @Test
     void mapsAuthenticationStatusesToAuthenticationFailure() {
         when(httpClient.get(any(), any(), any())).thenReturn(new HttpResponse("{}", 401));
 
-        assertThatThrownBy(() -> client.getMultipleCurrencyRates(USD, List.of(EUR)))
+        assertThatThrownBy(() -> client.getRates(USD, List.of(EUR)))
                 .isExactlyInstanceOf(AuthenticationFailedException.class);
     }
 
@@ -133,7 +169,7 @@ class FreeCurrencyApiClientTest {
         when(httpClient.get(any(), any(), any()))
                 .thenReturn(new HttpResponse("{\"message\":\"Invalid authentication credentials\"}", 401));
 
-        assertThatThrownBy(() -> client.getMultipleCurrencyRates(USD, List.of(EUR)))
+        assertThatThrownBy(() -> client.getRates(USD, List.of(EUR)))
                 .isExactlyInstanceOf(AuthenticationFailedException.class)
                 .hasMessageContaining("401")
                 .hasMessageContaining("Invalid authentication credentials")
