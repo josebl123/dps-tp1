@@ -18,8 +18,8 @@ class CurrencyRateTest {
     @Test
     void rejectsANullRate() {
         assertThatThrownBy(() -> new CurrencyRate(USD, EUR, null, TIMESTAMP))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("greater than zero");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("rate");
     }
 
     @Test

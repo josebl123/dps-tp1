@@ -22,4 +22,16 @@ class GsonJsonParserTest {
         assertThatThrownBy(() -> parser.parse("{malformed", ExchangeRateResponse.class))
                 .isInstanceOf(JsonParseException.class);
     }
+
+    @Test
+    void rejectsAnEmptyResponseBody() {
+        assertThatThrownBy(() -> parser.parse("", ExchangeRateResponse.class))
+                .isInstanceOf(JsonParseException.class);
+    }
+
+    @Test
+    void rejectsAJsonNullLiteral() {
+        assertThatThrownBy(() -> parser.parse("null", ExchangeRateResponse.class))
+                .isInstanceOf(JsonParseException.class);
+    }
 }
