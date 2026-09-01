@@ -1,4 +1,3 @@
-import edu.itba.class1.exchange.client.currencyapi.CurrencyApiProvider;
 import edu.itba.class1.exchange.client.currencyapi.freecurrencyapi.FreeCurrencyApiClient;
 import edu.itba.class1.exchange.client.error.CurrencyProviderException;
 import edu.itba.class1.exchange.http.HttpTransportException;
@@ -6,7 +5,9 @@ import edu.itba.class1.exchange.http.UnirestHttpClient;
 import edu.itba.class1.exchange.model.Conversion;
 import edu.itba.class1.exchange.model.MoneyAmount;
 import edu.itba.class1.exchange.parser.GsonJsonParser;
+import edu.itba.class1.exchange.service.CurrencyCatalog;
 import edu.itba.class1.exchange.service.CurrencyConverter;
+import edu.itba.class1.exchange.service.CurrencyRateProvider;
 import edu.itba.class1.exchange.service.HistoricalCurrencyConverter;
 import edu.itba.class1.exchange.service.error.RateNotAvailableException;
 
@@ -26,14 +27,15 @@ static final Path ENV_FILE = Path.of(".env");
 void main() {
 	final var apiKey = readApiKey();
 	if (apiKey == null || apiKey.isBlank()) {
-		System.err.print("Falta  key de freecurrencyapi.com.");
+		System.err.println("Falta la key de freecurrencyapi.com.");
 		return;
 	}
 
-	final var provider = new CurrencyApiProvider(
-			new FreeCurrencyApiClient(new UnirestHttpClient(), new GsonJsonParser(), apiKey));
-	final var converter = new CurrencyConverter(provider);
-	final var historicalConverter = new HistoricalCurrencyConverter(provider);
+	final var apiClient = new FreeCurrencyApiClient(new UnirestHttpClient(), new GsonJsonParser(), apiKey);
+	final CurrencyCatalog catalog = apiClient;
+	final CurrencyRateProvider rateProvider = apiClient;
+	final var converter = new CurrencyConverter(apiClient);
+	final var historicalConverter = new HistoricalCurrencyConverter(apiClient);
 
 	final var usd = Currency.getInstance("USD");
 	final var eur = Currency.getInstance("EUR");
@@ -42,10 +44,10 @@ void main() {
 	final var date = LocalDate.of(2024, 11, 20);
 
 	try {
-		final var catalog = provider.getAvailableCurrencies();
-		System.out.println("Monedas disponibles (" + catalog.size() + "): " + catalog);
+		final var currencies = catalog.getAvailableCurrencies();
+		System.out.println("Monedas disponibles (" + currencies.size() + "): " + currencies);
 
-		final var rate = provider.getCurrencyRate(usd, eur);
+		final var rate = rateProvider.getCurrencyRate(usd, eur);
 		System.out.printf("%nCotizacion %s -> %s: %s (obtenida %s)%n",
 				rate.fromCurrency(), rate.toCurrency(), rate.rate(), rate.timestamp());
 

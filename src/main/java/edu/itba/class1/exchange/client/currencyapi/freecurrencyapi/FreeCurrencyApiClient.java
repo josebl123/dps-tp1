@@ -1,6 +1,5 @@
 package edu.itba.class1.exchange.client.currencyapi.freecurrencyapi;
 
-import edu.itba.class1.exchange.client.currencyapi.CurrencyApiClient;
 import edu.itba.class1.exchange.client.currencyapi.freecurrencyapi.response.AvailableCurrenciesResponse;
 import edu.itba.class1.exchange.client.currencyapi.freecurrencyapi.response.ExchangeRateResponse;
 import edu.itba.class1.exchange.client.currencyapi.freecurrencyapi.response.HistoricalExchangeRateResponse;
@@ -15,6 +14,9 @@ import edu.itba.class1.exchange.http.HttpStatus;
 import edu.itba.class1.exchange.http.ResponseStatusChecker;
 import edu.itba.class1.exchange.model.CurrencyRate;
 import edu.itba.class1.exchange.parser.JsonParser;
+import edu.itba.class1.exchange.service.CurrencyCatalog;
+import edu.itba.class1.exchange.service.CurrencyRateProvider;
+import edu.itba.class1.exchange.service.HistoricalCurrencyRateProvider;
 import edu.itba.class1.exchange.parser.JsonParseException;
 import lombok.RequiredArgsConstructor;
 
@@ -22,11 +24,12 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Currency;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 @RequiredArgsConstructor
-public class FreeCurrencyApiClient implements CurrencyApiClient {
+public class FreeCurrencyApiClient implements CurrencyRateProvider, HistoricalCurrencyRateProvider, CurrencyCatalog {
     private final HttpClient httpClient;
     private final JsonParser jsonParser;
     private final ResponseStatusChecker responseStatusChecker;
@@ -50,11 +53,16 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
     }
 
     @Override
-    public Collection<CurrencyRate> getRates(Currency fromCurrency, Collection<Currency> toCurrencies) {
+    public Collection<CurrencyRate> getMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies) {
         final var response = this.getParsedResponse(URI.create(BASE_URL.concat("/latest")),
                 Map.of("base_currency", fromCurrency.getCurrencyCode(), "currencies", joinCodes(toCurrencies)),
                 ExchangeRateResponse.class);
         return this.responseMapper.toRates(fromCurrency, toCurrencies, response);
+    }
+
+    @Override
+    public CurrencyRate getCurrencyRate(Currency fromCurrency, Currency toCurrency) {
+        return this.getMultipleCurrencyRates(fromCurrency, List.of(toCurrency)).stream().findFirst().orElseThrow();
     }
 
     @Override
@@ -64,11 +72,16 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
     }
 
     @Override
-    public Collection<CurrencyRate> getHistoricalRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
+    public Collection<CurrencyRate> getHistoricalMultipleCurrencyRates(Currency fromCurrency, Collection<Currency> toCurrencies, LocalDate date) {
         final var response = this.getParsedResponse(URI.create(BASE_URL.concat("/historical")),
                 Map.of("base_currency", fromCurrency.getCurrencyCode(), "currencies", joinCodes(toCurrencies), "date", date.toString()),
                 HistoricalExchangeRateResponse.class);
         return this.responseMapper.toHistoricalRates(fromCurrency, toCurrencies, date, response);
+    }
+
+    @Override
+    public CurrencyRate getHistoricalCurrencyRate(Currency from, Currency to, LocalDate date) {
+        return this.getHistoricalMultipleCurrencyRates(from, List.of(to), date).stream().findFirst().orElseThrow();
     }
 
     private static String joinCodes(Collection<Currency> currencies) {
