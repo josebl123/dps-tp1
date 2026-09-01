@@ -21,18 +21,18 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Currency;
 import java.util.Map;
+import java.util.Objects;
 
 @RequiredArgsConstructor
 public class FreeCurrencyApiClient implements CurrencyApiClient {
     private final HttpClient httpClient;
     private final JsonParser jsonParser;
     private final ResponseStatusChecker responseStatusChecker;
+    private final String apiKey;
     private static final String BASE_URL = "https://api.freecurrencyapi.com/v1";
-    private static final String API_KEY = "fca_live_lOuYu1BdnuDDXjOBIHYivtJ2qEKZPgjpc0GtN7hV";
-    private static final Map<String, String> API_HEADERS = Map.of("accept", "application/json", "apikey", API_KEY);
 
-    public FreeCurrencyApiClient(HttpClient httpClient, JsonParser jsonParser) {
-        this(httpClient, jsonParser, defaultStatusChecker());
+    public FreeCurrencyApiClient(HttpClient httpClient, JsonParser jsonParser, String apiKey) {
+        this(httpClient, jsonParser, defaultStatusChecker(), apiKey);
     }
 
     public static ResponseStatusChecker defaultStatusChecker() {
@@ -69,8 +69,12 @@ public class FreeCurrencyApiClient implements CurrencyApiClient {
         return String.join(",", currencies.stream().map(Currency::getCurrencyCode).toList());
     }
 
+    private Map<String, String> apiHeaders() {
+        return Map.of("accept", "application/json", "apikey", Objects.requireNonNull(this.apiKey, "apiKey"));
+    }
+
     private <T> T getParsedResponse(URI uri, Map<String, Object> queryParams, Class<T> responseClass) {
-        final var response = this.httpClient.get(uri, queryParams, API_HEADERS);
+        final var response = this.httpClient.get(uri, queryParams, this.apiHeaders());
         this.responseStatusChecker.check(response);
         try {
             return this.jsonParser.parse(response.body(), responseClass);

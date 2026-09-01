@@ -33,7 +33,7 @@ class FreeCurrencyApiClientTest {
     private static final Currency JPY = Currency.getInstance("JPY");
 
     private final HttpClient httpClient = mock(HttpClient.class);
-    private final FreeCurrencyApiClient client = new FreeCurrencyApiClient(httpClient, new GsonJsonParser());
+    private final FreeCurrencyApiClient client = new FreeCurrencyApiClient(httpClient, new GsonJsonParser(), "test-api-key");
 
     @BeforeEach
     void returnAnEmptyResponse() {
@@ -154,9 +154,24 @@ class FreeCurrencyApiClientTest {
                 .hasCauseInstanceOf(RuntimeException.class);
     }
 
+    @Test
+    void sendsTheConfiguredApiKeyOnEveryRequest() {
+        client.getAvailableCurrencies();
+
+        assertThat(capturedHeaders()).containsEntry("apikey", "test-api-key")
+                .containsEntry("accept", "application/json");
+    }
+
     private URI capturedUrl() {
         var captor = ArgumentCaptor.forClass(URI.class);
         verify(httpClient).get(captor.capture(), any(), any());
+        return captor.getValue();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> capturedHeaders() {
+        var captor = ArgumentCaptor.forClass(Map.class);
+        verify(httpClient).get(any(), any(), captor.capture());
         return captor.getValue();
     }
 
